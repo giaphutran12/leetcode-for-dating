@@ -23,6 +23,7 @@ import type {
 } from "../domain/types";
 import type { ConversationEngine } from "../engine/conversationEngine";
 import { deterministicEngine } from "../engine/conversationEngine";
+import { httpJudge } from "../engine/judgeEngine";
 
 const MAX_RESPONSE_LENGTH = 420;
 
@@ -337,13 +338,7 @@ export function usePracticeSession(
   };
 }
 
-// Default judge: POST the request to the server handler. Injected in tests so no
-// fetch mocking is needed. A thrown/failed fetch surfaces as a retryable error.
-async function defaultJudge(request: JudgeRequest): Promise<JudgeApiResponse> {
-  const response = await fetch("/api/judge", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(request),
-  });
-  return (await response.json()) as JudgeApiResponse;
-}
+// Default judge: POST the request to the server LLM judge via the shared client.
+// Injected in tests so no fetch mocking is needed. A thrown/failed fetch surfaces
+// as a retryable error inside httpJudge.
+const defaultJudge: JudgeFn = httpJudge;

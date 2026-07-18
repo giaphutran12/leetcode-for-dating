@@ -9,14 +9,18 @@
     "preview": "vite preview",
     "check": "tsc -b",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:judge:live": "RIZZCODE_LIVE_JUDGE=1 vitest run src/server/judge/live.smoke.test.ts"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.86",
     "@gsap/react": "^2.1.2",
     "@phosphor-icons/react": "^2.1.10",
+    "ai": "^6.0.230",
     "gsap": "^3.13.0",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",

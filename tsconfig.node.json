@@ -4,8 +4,12 @@
     "skipLibCheck": true,
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "target": "ES2022",
+    "strict": true,
+    "esModuleInterop": true,
     "noEmit": true,
     "tsBuildInfoFile": "./node_modules/.cache/tsconfig.node.tsbuildinfo"
   },
-  "include": ["vite.config.ts", "playwright.config.ts", "e2e"]
+  "references": [{ "path": "./tsconfig.app.json" }],
+  "include": ["vite.config.ts", "playwright.config.ts", "e2e", "server"]
 }
