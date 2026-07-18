@@ -58,6 +58,10 @@ export class StorageBackend {
   // If we already started in memory, reuse that same area as the fallback so a
   // later demote is a no-op swap and the shared map survives.
   private fallbackMemory: StorageLike | null;
+  // Every RecordStore registers its key here (see RecordStore's constructor)
+  // so demote() knows what to carry over without this seam having to know
+  // about any store's key constants.
+  private readonly keys = new Set<string>();
 
   constructor(init: StorageProbe) {
     this.area = init.area;
@@ -65,9 +69,28 @@ export class StorageBackend {
     this.fallbackMemory = init.persistent ? null : init.area;
   }
 
+  registerKey(key: string): void {
+    this.keys.add(key);
+  }
+
   demote(): void {
+    const previous = this.area;
     this.fallbackMemory ??= createMemoryStorageLike();
-    this.area = this.fallbackMemory;
+    const next = this.fallbackMemory;
+    // Carry over already-persisted sibling records so a quota failure on one
+    // store doesn't make the others silently revert to their defaults on the
+    // next read — the data is still sitting in the previous area, just no
+    // longer reachable once `area` swaps to memory. Best-effort per key: a
+    // failing read just skips that key rather than aborting the demote.
+    for (const key of this.keys) {
+      try {
+        const value = previous.getItem(key);
+        if (value !== null) next.setItem(key, value);
+      } catch {
+        // Skip this key; the rest still get a chance to migrate.
+      }
+    }
+    this.area = next;
     this.persistent = false;
   }
 }
@@ -82,7 +105,9 @@ export class RecordStore<T> {
     readonly key: string,
     private readonly parse: (raw: unknown) => T | null,
     private readonly makeDefault: () => T,
-  ) {}
+  ) {
+    this.backend.registerKey(key);
+  }
 
   get persistent(): boolean {
     return this.backend.persistent;

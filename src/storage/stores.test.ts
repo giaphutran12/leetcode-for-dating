@@ -43,6 +43,30 @@ function quotaStorage(): StorageLike {
   };
 }
 
+// Like fakeStorage, but writes can be switched to throw mid-session — for
+// simulating a quota that fills up only after some records already persisted.
+function fakeStorageWithToggleableQuota(): StorageLike & {
+  raw: Map<string, string>;
+  startThrowing(): void;
+} {
+  const raw = new Map<string, string>();
+  let throwing = false;
+  return {
+    raw,
+    startThrowing: () => {
+      throwing = true;
+    },
+    getItem: (key) => (raw.has(key) ? (raw.get(key) as string) : null),
+    setItem: (key, value) => {
+      if (throwing) throw new DOMException("quota", "QuotaExceededError");
+      raw.set(key, value);
+    },
+    removeItem: (key) => {
+      raw.delete(key);
+    },
+  };
+}
+
 function backendFrom(area: StorageLike): StorageBackend {
   return new StorageBackend({ area, persistent: true });
 }
@@ -186,6 +210,30 @@ describe("quota failure → memory fallback", () => {
     expect(backend.persistent).toBe(false);
     // The value survives in the shared memory fallback.
     expect(store.load()).toEqual(value);
+  });
+});
+
+describe("demote — migrates sibling records into the memory fallback", () => {
+  it("keeps an untouched sibling record readable after a later quota failure", () => {
+    const area = fakeStorageWithToggleableQuota();
+    const backend = backendFrom(area);
+    const profileStore = createProfileStore(backend);
+    const progressStore = createProgressStore(backend);
+
+    // Both records persist fine while the area still has room.
+    profileStore.save(sampleProfile);
+    progressStore.save({ ...defaultProgress(), publicXP: 40 });
+
+    // Quota fills up mid-session; the next progress save fails and demotes.
+    area.startThrowing();
+    const laterProgress: Progress = { ...defaultProgress(), publicXP: 120 };
+    expect(() => progressStore.save(laterProgress)).not.toThrow();
+
+    expect(backend.persistent).toBe(false);
+    // The profile was never re-saved after demote, but its value from the
+    // previous (now unreachable) area was migrated into memory, so it must
+    // not silently revert to the default.
+    expect(profileStore.load()).toEqual(sampleProfile);
   });
 });
 
