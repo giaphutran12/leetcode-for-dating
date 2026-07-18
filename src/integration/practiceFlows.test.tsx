@@ -257,8 +257,21 @@ describe("integration 5: cap-level violation", () => {
     expect(score).toBeLessThanOrEqual(4);
     // 4-or-below is COOKED or FUMBLED — never ATE.
     expect(screen.queryByText("ATE")).not.toBeInTheDocument();
-    // A cap still awards XP from the capped score (unlike a stop).
-    expect(screen.getByText(/practice XP/)).toBeInTheDocument();
+
+    // A cap still awards XP from the capped score (unlike a stop): scenario 1 is
+    // easy (no difficulty bonus), so masteryXP = finalScore * 10, plus the +10
+    // first-completion bonus. Assert the visible number equals that computation
+    // instead of just checking the copy is present (mirrors how integration 4
+    // reads the curriculum Practice XP number).
+    const expectedXP = score * 10 + 10;
+    expect(expectedXP).toBeGreaterThan(0);
+    expect(expectedXP).toBeLessThanOrEqual(50);
+    await user.click(screen.getByRole("link", { name: /Back to curriculum/ }));
+    const strip = await screen.findByLabelText("Your progress");
+    const xp = within(strip)
+      .getByText("Practice XP")
+      .parentElement?.querySelector("strong")?.textContent;
+    expect(Number(xp)).toBe(expectedXP);
   });
 });
 

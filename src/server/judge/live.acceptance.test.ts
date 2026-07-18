@@ -16,7 +16,7 @@ import type { JudgeRequest } from "../../domain/types";
 import { verdictFor } from "../../domain/scoring";
 import { handleJudgeRequest, type JudgeDeps } from "./route";
 
-const LIVE = Boolean(process.env.RIZZCODE_LIVE_JUDGE);
+const LIVE = process.env.RIZZCODE_LIVE_JUDGE === "1";
 
 function liveDeps(): JudgeDeps {
   const env = loadEnv("development", process.cwd(), "");

@@ -11,7 +11,7 @@ import type { JudgeRequest } from "../../domain/types";
 import { verdictFor } from "../../domain/scoring";
 import { handleJudgeRequest, type JudgeDeps } from "./route";
 
-const LIVE = Boolean(process.env.RIZZCODE_LIVE_JUDGE);
+const LIVE = process.env.RIZZCODE_LIVE_JUDGE === "1";
 
 function liveDeps(): JudgeDeps {
   // Execution-only: read the two server variables from .env.local at runtime.
