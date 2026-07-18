@@ -16,9 +16,10 @@ import {
 import { useRizzCode } from "../../context/RizzCodeContext";
 import { CRITERION_LABELS } from "../../domain/constants";
 import {
-  isScenarioUnlocked,
-  nextUnlockedScenario,
-} from "../../domain/progression";
+  MAX_CONVERSATION_TURNS,
+  MIN_CONVERSATION_TURNS,
+} from "../../domain/constants";
+import { nextPracticeScenario } from "../../domain/progression";
 import type { JudgeResult, Scenario } from "../../domain/types";
 import { useRizzPracticeSession } from "../../hooks/useRizzPracticeSession";
 import {
@@ -45,7 +46,7 @@ function ResultView({
   retry: () => void;
 }) {
   const { profile, progress } = useRizzCode();
-  const next = nextUnlockedScenario(progress, profile);
+  const next = nextPracticeScenario(progress, profile);
   return (
     <section
       className="rizz-result"
@@ -178,27 +179,9 @@ function ResultView({
 
 export function PracticeView({ scenario }: { scenario: Scenario }) {
   const { profile, progress } = useRizzCode();
-  const unlocked = isScenarioUnlocked(scenario, progress, profile);
   const [started, setStarted] = useState(false);
   const session = useRizzPracticeSession(scenario);
   const { attempt } = session;
-
-  if (!unlocked) {
-    return (
-      <ProductShell eyebrow="Locked scenario" title="Earn this rep first.">
-        <section className="rizz-empty-state">
-          <ShieldWarning size={42} weight="duotone" />
-          <p>
-            Complete the previous {scenario.module} scenario to unlock{" "}
-            <strong>{scenario.title}</strong>.
-          </p>
-          <a className="rizz-primary-button" href="/practice">
-            Back to curriculum
-          </a>
-        </section>
-      </ProductShell>
-    );
-  }
 
   if (!started) {
     return (
@@ -226,7 +209,7 @@ export function PracticeView({ scenario }: { scenario: Scenario }) {
               </span>
               <span>
                 <Clock size={18} />
-                Three authored turns
+                3–6 adaptive turns
               </span>
             </div>
           </div>
@@ -260,7 +243,7 @@ export function PracticeView({ scenario }: { scenario: Scenario }) {
             type="button"
             onClick={() => setStarted(true)}
           >
-            Start at 0 of 3
+            Start conversation
             <ArrowRight size={19} weight="bold" />
           </button>
         </section>
@@ -294,6 +277,8 @@ export function PracticeView({ scenario }: { scenario: Scenario }) {
     }
     return speaker === "you" ? "You" : scenario.persona.name;
   };
+  const personaError = attempt.error?.code.startsWith("persona_") ?? false;
+  const canRetryError = attempt.error?.retryable !== false;
 
   return (
     <ProductShell
@@ -322,38 +307,47 @@ export function PracticeView({ scenario }: { scenario: Scenario }) {
           </div>
           <div
             className="rizz-turn-meter"
-            aria-label={`${attempt.userTurn} of 3 turns complete`}
+            aria-label={`${attempt.userTurn} of ${MAX_CONVERSATION_TURNS} possible turns complete`}
           >
             <div>
               <span>Conversation progress</span>
-              <strong>{attempt.userTurn} of 3</strong>
+              <strong>
+                {attempt.userTurn} / {MAX_CONVERSATION_TURNS}
+              </strong>
             </div>
             <div
               role="progressbar"
               aria-valuemin={0}
-              aria-valuemax={3}
+              aria-valuemax={MAX_CONVERSATION_TURNS}
               aria-valuenow={attempt.userTurn}
             >
               <span
-                style={{ width: `${(attempt.userTurn / 3) * 100}%` }}
+                style={{
+                  width: `${(attempt.userTurn / MAX_CONVERSATION_TURNS) * 100}%`,
+                }}
               />
             </div>
+            <small>
+              Judge anytime after {MIN_CONVERSATION_TURNS} turns
+            </small>
           </div>
         </aside>
 
         <section className="rizz-chat" aria-labelledby="chat-title">
           <header>
             <div>
-              <span>Deterministic persona</span>
+              <span>Adaptive AI persona</span>
               <h2 id="chat-title">{scenario.persona.name}</h2>
             </div>
             <span className="rizz-live-dot">
               <i aria-hidden="true" />
               {attempt.status === "awaiting_judgment"
                 ? "Judging"
-                : attempt.status === "awaiting_reply"
-                  ? "Thinking"
-                  : "Your turn"}
+                : session.isPersonaTyping
+                  ? "Typing"
+                  : attempt.status === "awaiting_reply"
+                    ? "Sent"
+                    : "Your turn"}
             </span>
           </header>
 
@@ -371,25 +365,35 @@ export function PracticeView({ scenario }: { scenario: Scenario }) {
               )}
             {attempt.messages.map((message) => (
               <article
-                className={`rizz-message rizz-message--${message.speaker}`}
+                className={`rizz-message rizz-message--${message.speaker} rizz-message--${message.kind}`}
                 key={message.id}
               >
                 <span>{speakerLabel(message.speaker)}</span>
                 <p>{message.body}</p>
+                {scenario.mode === "messaging" &&
+                  message.speaker === "you" &&
+                  message.deliveryStatus && (
+                    <small
+                      className="rizz-message__status"
+                      aria-label={`Message ${message.deliveryStatus}`}
+                    >
+                      {message.deliveryStatus}
+                    </small>
+                  )}
               </article>
             ))}
-            {attempt.status === "awaiting_reply" && (
+            {session.isPersonaTyping && (
               <div className="rizz-thinking" role="status">
                 <i />
                 <i />
                 <i />
-                {scenario.persona.name} is reacting…
+                {scenario.persona.name} is typing…
               </div>
             )}
             {attempt.status === "awaiting_judgment" && (
               <div className="rizz-judging" role="status">
                 <Sparkle size={20} weight="fill" />
-                The judge is reading all three turns and checking the receipts…
+                The judge is reading the canonical conversation and checking the receipts…
               </div>
             )}
           </div>
@@ -404,13 +408,32 @@ export function PracticeView({ scenario }: { scenario: Scenario }) {
             <div className="rizz-judge-error" role="alert">
               <WarningCircle size={26} weight="fill" />
               <div>
-                <strong>Judgment did not land.</strong>
+                <strong>
+                  {personaError
+                    ? "Reaction did not land."
+                    : "Judgment did not land."}
+                </strong>
                 <p>{attempt.error?.message}</p>
-                <span>No score or XP was awarded. Your transcript is preserved.</span>
+                <span>
+                  {personaError && canRetryError
+                    ? "Your line is preserved. Retry the same turn or reset."
+                    : personaError
+                      ? "This conversation fell out of sync. Reset the attempt to continue."
+                    : "No score or XP was awarded. Your transcript is preserved."}
+                </span>
               </div>
-              <button type="button" onClick={session.retryJudgment}>
-                Retry judgment
-              </button>
+              {canRetryError && (
+                <button
+                  type="button"
+                  onClick={
+                    personaError
+                      ? session.retryPersona
+                      : session.retryJudgment
+                  }
+                >
+                  {personaError ? "Retry reaction" : "Retry judgment"}
+                </button>
+              )}
             </div>
           ) : (
             <form className="rizz-composer" onSubmit={session.submit}>
@@ -435,13 +458,26 @@ export function PracticeView({ scenario }: { scenario: Scenario }) {
                 >
                   {session.inputError ?? `${session.input.length}/420`}
                 </span>
-                <button
-                  type="submit"
-                  disabled={session.isBusy || !session.input.trim()}
-                >
-                  {attempt.userTurn === 2 ? "Send final turn" : "Send response"}
-                  <PaperPlaneRight size={18} weight="fill" />
-                </button>
+                <div className="rizz-composer__actions">
+                  {session.canEnd && (
+                    <button
+                      className="rizz-end-button"
+                      type="button"
+                      onClick={session.endConversation}
+                    >
+                      End &amp; get judgment
+                    </button>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={session.isBusy || !session.input.trim()}
+                  >
+                    {attempt.userTurn === MAX_CONVERSATION_TURNS - 1
+                      ? "Send final turn"
+                      : "Send response"}
+                    <PaperPlaneRight size={18} weight="fill" />
+                  </button>
+                </div>
               </div>
             </form>
           )}

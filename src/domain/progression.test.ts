@@ -5,10 +5,10 @@ import {
   applyJudgment,
   calculateXPDelta,
   defaultProgress,
-  isScenarioUnlocked,
   masteryXP,
+  nextPracticeScenario,
 } from "./progression";
-import type { JudgeResult } from "./types";
+import type { JudgeResult, UserProfile } from "./types";
 
 function result(
   finalScore: number,
@@ -41,7 +41,7 @@ function result(
   };
 }
 
-describe("XP, anti-farming, and unlocks", () => {
+describe("XP, anti-farming, and open practice", () => {
   it("uses locked mastery XP and level math", () => {
     expect(masteryXP(8, "easy")).toBe(80);
     expect(masteryXP(8, "medium")).toBe(90);
@@ -132,16 +132,20 @@ describe("XP, anti-farming, and unlocks", () => {
     expect(duplicate.progress.publicXP).toBe(first.progress.publicXP);
   });
 
-  it("unlocks each module in sequence", () => {
+  it("recommends the first incomplete scenario without gating access", () => {
     const first = getScenario("spark-bus-stop")!;
     const second = getScenario("spark-open-source")!;
-    expect(isScenarioUnlocked(first, defaultProgress)).toBe(true);
-    expect(isScenarioUnlocked(second, defaultProgress)).toBe(false);
+    const profile = {
+      onboardingPlan: {
+        orderedScenarioIds: [first.id, second.id],
+      },
+    } as UserProfile;
+    expect(nextPracticeScenario(defaultProgress, profile).id).toBe(first.id);
     expect(
-      isScenarioUnlocked(second, {
-        ...defaultProgress,
-        completedScenarioIds: [first.id],
-      }),
-    ).toBe(true);
+      nextPracticeScenario(
+        { ...defaultProgress, completedScenarioIds: [first.id] },
+        profile,
+      ).id,
+    ).toBe(second.id);
   });
 });

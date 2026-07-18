@@ -12,7 +12,7 @@ import {
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useRizzCode } from "../context/RizzCodeContext";
-import { nextUnlockedScenario } from "../domain/progression";
+import { nextPracticeScenario } from "../domain/progression";
 import { modules, scenarios } from "../data/scenarios";
 import "../styles/taste.css";
 
@@ -48,7 +48,7 @@ export function TasteExperience() {
   const [activeAccordion, setActiveAccordion] = useState(0);
   const { profile, progress } = useRizzCode();
   const featured = scenarios[1];
-  const next = nextUnlockedScenario(progress, profile);
+  const next = nextPracticeScenario(progress, profile);
   const startHref = profile.onboardingComplete
     ? `/practice/${next.id}`
     : "/onboarding";

@@ -3,6 +3,9 @@ export type ModuleId = "spark" | "connection";
 export type Difficulty = "easy" | "medium" | "hard";
 export type Engagement = "closed" | "low" | "neutral" | "warm";
 export type BoundaryState = "none" | "soft" | "explicit";
+export type ConversationTurn = 1 | 2 | 3 | 4 | 5 | 6;
+export type ConversationTurnCount = 0 | ConversationTurn;
+export type MessageDeliveryStatus = "sent" | "delivered" | "seen";
 
 export type CriterionId =
   | "context_naturalness"
@@ -66,7 +69,7 @@ export interface Scenario {
 }
 
 export interface PersonaReply {
-  reply: string;
+  actions: PersonaAction[];
   state: PersonaState;
   interestChange: "down" | "same" | "up";
   terminalReason:
@@ -77,16 +80,31 @@ export interface PersonaReply {
     | "boundary";
 }
 
+export type PersonaAction =
+  | {
+      kind: "text";
+      body: string;
+      delayMs: number;
+    }
+  | {
+      kind: "reaction";
+      body: "😂" | "😭" | "❤️" | "👀" | "👍" | "✨";
+      delayMs: number;
+    };
+
 export interface PracticeMessage {
   id: string;
   speaker: "you" | "her";
   body: string;
-  turn: 0 | 1 | 2 | 3;
+  turn: ConversationTurnCount;
+  kind: "text" | "reaction";
+  sequence: number;
+  deliveryStatus?: MessageDeliveryStatus;
   createdAt: string;
 }
 
 export interface Evidence {
-  turn: 1 | 2 | 3;
+  turn: ConversationTurn;
   excerpt: string;
   reason: string;
 }
@@ -138,8 +156,52 @@ export interface JudgeRequest {
   schemaVersion: "1.0";
   attemptId: string;
   scenarioId: string;
-  responses: Array<{ turn: 1 | 2 | 3; body: string }>;
+  responses: Array<{ turn: ConversationTurn; body: string }>;
 }
+
+export interface PersonaRequest {
+  schemaVersion: "1.0";
+  attemptId: string;
+  scenarioId: string;
+  turn: ConversationTurn;
+  body: string;
+}
+
+export type PersonaErrorCode =
+  | "persona_invalid_request"
+  | "persona_conflict"
+  | "persona_unavailable";
+
+export type PersonaApiResponse =
+  | {
+      ok: true;
+      attemptId: string;
+      scenarioId: string;
+      turn: ConversationTurn;
+      reply: PersonaReply;
+      usedFallback: boolean;
+    }
+  | {
+      ok: false;
+      retryable: boolean;
+      code: PersonaErrorCode;
+      message: string;
+    };
+
+export type PersonaPrepareApiResponse =
+  | {
+      ok: true;
+      attemptId: string;
+      scenarioId: string;
+      turn: ConversationTurn;
+      prepared: true;
+    }
+  | {
+      ok: false;
+      retryable: boolean;
+      code: PersonaErrorCode;
+      message: string;
+    };
 
 export type JudgeErrorCode =
   | "judge_unconfigured"
@@ -161,7 +223,7 @@ export interface Attempt {
   id: string;
   scenarioId: string;
   messages: PracticeMessage[];
-  userTurn: 0 | 1 | 2 | 3;
+  userTurn: ConversationTurnCount;
   status:
     | "idle"
     | "active"
@@ -172,8 +234,9 @@ export interface Attempt {
   personaState: PersonaState;
   result?: JudgeResult;
   error?: {
-    code: JudgeErrorCode | "persona_unavailable";
+    code: JudgeErrorCode | PersonaErrorCode;
     message: string;
+    retryable?: boolean;
   };
   xpAwarded?: number;
   isPersonalBest?: boolean;

@@ -1,8 +1,9 @@
 import { z } from "zod";
 import { MAX_RESPONSE_LENGTH } from "../../src/domain/constants";
+import { ConversationTurnSchema } from "../persona/schema";
 
 export const EvidenceSchema = z.object({
-  turn: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  turn: ConversationTurnSchema,
   excerpt: z.string().min(1).max(MAX_RESPONSE_LENGTH),
   reason: z.string().min(1).max(360),
 });
@@ -46,7 +47,7 @@ export const JudgeModelDraftSchema = z.object({
 });
 
 const ResponseSchema = z.object({
-  turn: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  turn: ConversationTurnSchema,
   body: z.string().trim().min(1).max(MAX_RESPONSE_LENGTH),
 });
 
@@ -55,7 +56,7 @@ export const JudgeRequestSchema = z
     schemaVersion: z.literal("1.0"),
     attemptId: z.string().min(8).max(120),
     scenarioId: z.string().min(1).max(120),
-    responses: z.array(ResponseSchema).min(1).max(3),
+    responses: z.array(ResponseSchema).min(1).max(6),
   })
   .strict()
   .superRefine((value, context) => {

@@ -38,6 +38,6 @@ export function createJudgeRoute(provider?: JudgeProvider) {
 
     const selectedProvider = selectJudgeProvider(provider);
     const result = await judgeAttempt(parsed.data, selectedProvider);
-    response.status(result.ok ? 200 : 503).json(result);
+    response.status(result.ok ? 200 : result.retryable ? 503 : 409).json(result);
   };
 }

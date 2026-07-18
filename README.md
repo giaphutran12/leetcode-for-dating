@@ -9,16 +9,18 @@ the Taste visual direction.
 
 - Four-question onboarding, skip path, personalized starting module, two skill
   priorities, Growth Direction, and one optional Side Quest
-- Spark and Connection curriculum with locked, available, and complete states
+- Spark and Connection curriculum with all ten scenarios available immediately
 - Exactly ten playable In Person and Messaging scenarios
-- Exactly three user-authored responses in a normal attempt
-- Canonical deterministic persona reactions after every accepted response
+- Three to six user-authored turns, with earlier persona or boundary exits
+- Server-side adaptive persona reactions using `gpt-5-nano` by default
+- Messaging draft preparation after five idle seconds, plus Sent, Delivered,
+  Seen, and persona typing states
 - Server-only LLM judge using Vercel AI SDK v6, `@ai-sdk/openai`, Zod,
   `generateText()`, and `Output.object()`
 - Five evidence-backed rubric criteria, deterministic gates and arithmetic, and
   FUMBLED, COOKED, or ATE verdicts
 - Likely simulated outcomes, improved-response coaching, XP, levels, streaks,
-  personal bests, achievements, and sequential unlocks
+  personal bests, achievements, and recommended next reps
 - Demo leaderboard choice A using practice XP only
 - Private self-reported real-world milestones that add zero public XP
 - Versioned local persistence, isolated corrupt-record recovery, storage
@@ -44,6 +46,7 @@ cp .env.example .env.local
 ```
 
 Set `OPENAI_API_KEY` inside `.env.local`. The optional
+`RIZZCODE_PERSONA_MODEL` defaults to `gpt-5-nano`; the separate
 `RIZZCODE_JUDGE_MODEL` defaults to `gpt-5.4`.
 
 Then run:
@@ -62,9 +65,9 @@ RIZZCODE_ENV_FILE=/Users/edwardtran/side-projects/leetcode-for-dating/.env.local
 ```
 
 The server loads that file for execution only. It never prints or sends the key
-to the browser. Without a server-side key, all product views and persona
-reactions still work, but official judgment remains unscored and offers
-`Retry judgment`.
+to the browser. Without a server-side key, persona turns use labeled authored
+fallbacks, while official judgment remains unscored and offers `Retry
+judgment`.
 
 ## Verification
 
@@ -75,10 +78,11 @@ npm run check
 npm run build
 ```
 
-The Playwright suite starts the server with a server-boundary mock judge. It
-checks the full first-visit flow, exactly three turns, double-submit prevention,
-persistence after refresh, Messaging mode, unknown routes, judge failure, and
-375px, 768px, and 1440px layouts.
+The Playwright suite starts the server with server-boundary mock persona and
+judge providers. It checks the full first-visit flow, bounded adaptive turns,
+double-submit prevention, open scenario access, idle draft preparation,
+Sent/Delivered/Seen states, persistence after refresh, Messaging mode, unknown
+routes, judge failure, and 375px, 768px, and 1440px layouts.
 
 An opt-in live provider smoke test is available:
 
@@ -90,19 +94,25 @@ It prints only pass or failure metadata, never the credential or transcript.
 
 ## Runtime architecture
 
-- `server/index.ts` serves the Vite app and owns `POST /api/judge`.
+- `server/index.ts` serves the Vite app and owns `POST /api/persona/prepare`,
+  `POST /api/persona`, and `POST /api/judge`.
+- `server/persona/` owns prompt-safe adaptive generation, draft preparation,
+  idempotency, authored fallback, and the bounded canonical conversation store.
 - `server/judge/provider.ts` is the only production provider path.
-- `server/judge/service.ts` reconstructs the canonical transcript, runs hard
-  gates, invokes the provider, validates evidence, recalculates scores, applies
-  caps, and derives the verdict.
-- `src/engine/conversationEngine.ts` is shared deterministic persona logic used
-  by the browser and server replay.
-- `src/domain/` owns pure scoring, XP, onboarding, validation, and unlock logic.
+- `server/judge/service.ts` requires the server-owned conversation, runs hard
+  gates, invokes the separate judge provider, validates evidence and outcomes,
+  recalculates scores, applies caps, and derives the verdict.
+- `src/engine/conversationEngine.ts` owns client-visible attempt transitions,
+  action rendering, delivery states, and authored fallback behavior.
+- `src/domain/` owns pure scoring, XP, onboarding, validation, and next-rep
+  logic.
 - `src/storage/stores.ts` owns the four versioned local records.
 
-Browser requests contain only the scenario ID, attempt ID, and bounded
-user-authored responses. Client-supplied persona replies, scores, XP, gates,
-outcomes, and leaderboard values are rejected.
+Browser requests contain only the scenario ID, attempt ID, contiguous turn, and
+bounded user text. In Messaging mode, a draft is sent for reply preparation
+only after five seconds without keyboard input; it does not advance the
+canonical turn. Client-supplied persona replies, scores, XP, gates, outcomes,
+and leaderboard values are rejected.
 
 ## Local persistence
 
@@ -119,6 +129,6 @@ storage is unavailable, practice continues in memory with a visible warning.
 ## Deliberately outside this MVP
 
 Authentication, Supabase, TinyFish, profile scraping, voice, avatars, video,
-live humans, automated messages, a real global leaderboard, course
+live humans, automated messages, Elo ratings, a real global leaderboard, course
 infrastructure, attractiveness scoring, therapy, and attachment diagnosis are
 not included.

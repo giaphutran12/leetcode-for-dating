@@ -1,12 +1,18 @@
 import type {
   Attempt,
+  ConversationTurn,
   Engagement,
+  MessageDeliveryStatus,
+  PersonaAction,
   PersonaReply,
   PersonaState,
   PracticeMessage,
   Scenario,
 } from "../domain/types";
-import { MAX_RESPONSE_LENGTH } from "../domain/constants";
+import {
+  MAX_CONVERSATION_TURNS,
+  MAX_RESPONSE_LENGTH,
+} from "../domain/constants";
 
 const engagementOrder: Engagement[] = ["closed", "low", "neutral", "warm"];
 
@@ -71,7 +77,7 @@ function moveEngagement(
 export function replyToUser(input: {
   scenario: Scenario;
   body: string;
-  turn: 1 | 2 | 3;
+  turn: ConversationTurn;
   personaState: PersonaState;
 }): PersonaReply {
   const { scenario, body, turn, personaState } = input;
@@ -103,36 +109,43 @@ export function replyToUser(input: {
     personaState.engagement,
     interestChange,
   );
-  const terminal = terminalReason !== null || turn === 3;
-  const reply = fallback.repliesByTurn[turn][engagement];
+  const terminal =
+    terminalReason !== null || turn === MAX_CONVERSATION_TURNS;
+  const fallbackTurn = Math.min(turn, 3) as 1 | 2 | 3;
+  const reply = fallback.repliesByTurn[fallbackTurn][engagement];
 
   return {
-    reply,
+    actions: [{ kind: "text", body: reply, delayMs: 180 }],
     state: {
       engagement,
       boundary,
       terminal,
     },
     interestChange,
-    terminalReason: terminalReason ?? (turn === 3 ? "completed" : null),
+    terminalReason:
+      terminalReason ??
+      (turn === MAX_CONVERSATION_TURNS ? "completed" : null),
   };
 }
 
 export function authoredFallbackReply(input: {
   scenario: Scenario;
-  turn: 1 | 2 | 3;
+  turn: ConversationTurn;
   personaState: PersonaState;
 }): PersonaReply {
   const { scenario, turn, personaState } = input;
-  const reply = scenario.fallback.repliesByTurn[turn][personaState.engagement];
+  const fallbackTurn = Math.min(turn, 3) as 1 | 2 | 3;
+  const reply =
+    scenario.fallback.repliesByTurn[fallbackTurn][personaState.engagement];
   return {
-    reply,
+    actions: [{ kind: "text", body: reply, delayMs: 180 }],
     state: {
       ...personaState,
-      terminal: turn === 3,
+      terminal: turn === MAX_CONVERSATION_TURNS,
     },
     interestChange: "same",
-    terminalReason: turn === 3 ? "completed" : null,
+    terminalReason:
+      turn === MAX_CONVERSATION_TURNS ? "completed" : null,
   };
 }
 
@@ -140,7 +153,7 @@ export async function safePersonaReply(
   input: {
     scenario: Scenario;
     body: string;
-    turn: 1 | 2 | 3;
+    turn: ConversationTurn;
     personaState: PersonaState;
   },
   engine: typeof replyToUser = replyToUser,
@@ -155,8 +168,13 @@ export async function safePersonaReply(
   }
 }
 
-function messageId(attemptId: string, speaker: "you" | "her", turn: number) {
-  return `${attemptId}:${turn}:${speaker}`;
+function messageId(
+  attemptId: string,
+  speaker: "you" | "her",
+  turn: number,
+  sequence: number,
+) {
+  return `${attemptId}:${turn}:${speaker}:${sequence}`;
 }
 
 export function createAttempt(
@@ -168,10 +186,12 @@ export function createAttempt(
     scenario.opening.kind === "persona_message"
       ? [
           {
-            id: messageId(attemptId, "her", 0),
+            id: messageId(attemptId, "her", 0, 0),
             speaker: "her",
             body: scenario.opening.body,
             turn: 0,
+            kind: "text",
+            sequence: 0,
             createdAt: now,
           },
         ]
@@ -194,48 +214,141 @@ export function appendTurn(
   personaReply: PersonaReply,
   now = new Date().toISOString(),
 ): Attempt {
+  const pending = beginTurn(attempt, body, now);
+  if (pending === attempt) return attempt;
+  return applyPersonaReply(pending, personaReply, now);
+}
+
+export function beginTurn(
+  attempt: Attempt,
+  body: string,
+  now = new Date().toISOString(),
+): Attempt {
   if (
     attempt.status !== "active" &&
-    attempt.status !== "awaiting_reply"
+    attempt.status !== "idle"
   ) {
     return attempt;
   }
-  if (attempt.userTurn >= 3) {
+  if (attempt.userTurn >= MAX_CONVERSATION_TURNS) {
     return attempt;
   }
 
-  const turn = (attempt.userTurn + 1) as 1 | 2 | 3;
+  const turn = (attempt.userTurn + 1) as ConversationTurn;
   return {
     ...attempt,
     messages: [
       ...attempt.messages,
       {
-        id: messageId(attempt.id, "you", turn),
+        id: messageId(attempt.id, "you", turn, 0),
         speaker: "you",
         body,
         turn,
-        createdAt: now,
-      },
-      {
-        id: messageId(attempt.id, "her", turn),
-        speaker: "her",
-        body: personaReply.reply,
-        turn,
+        kind: "text",
+        sequence: 0,
+        deliveryStatus: "sent",
         createdAt: now,
       },
     ],
     userTurn: turn,
+    status: "awaiting_reply",
+    error: undefined,
+  };
+}
+
+const deliveryOrder: MessageDeliveryStatus[] = [
+  "sent",
+  "delivered",
+  "seen",
+];
+
+export function updateUserMessageDelivery(
+  attempt: Attempt,
+  turn: ConversationTurn,
+  deliveryStatus: MessageDeliveryStatus,
+): Attempt {
+  let changed = false;
+  const messages = attempt.messages.map((message) => {
+    if (message.speaker !== "you" || message.turn !== turn) return message;
+    const currentIndex = message.deliveryStatus
+      ? deliveryOrder.indexOf(message.deliveryStatus)
+      : -1;
+    const nextIndex = deliveryOrder.indexOf(deliveryStatus);
+    if (nextIndex <= currentIndex) return message;
+    changed = true;
+    return { ...message, deliveryStatus };
+  });
+  return changed ? { ...attempt, messages } : attempt;
+}
+
+export function appendPersonaAction(
+  attempt: Attempt,
+  action: PersonaAction,
+  sequence: number,
+  now = new Date().toISOString(),
+): Attempt {
+  if (attempt.status !== "awaiting_reply" || attempt.userTurn === 0) {
+    return attempt;
+  }
+  if (
+    attempt.messages.some(
+      (message) =>
+        message.speaker === "her" &&
+        message.turn === attempt.userTurn &&
+        message.sequence === sequence,
+    )
+  ) {
+    return attempt;
+  }
+  return {
+    ...attempt,
+    messages: [
+      ...attempt.messages,
+      {
+        id: messageId(attempt.id, "her", attempt.userTurn, sequence),
+        speaker: "her",
+        body: action.body,
+        turn: attempt.userTurn,
+        kind: action.kind,
+        sequence,
+        createdAt: now,
+      },
+    ],
+  };
+}
+
+export function finalizePersonaTurn(
+  attempt: Attempt,
+  personaReply: PersonaReply,
+): Attempt {
+  if (attempt.status !== "awaiting_reply") return attempt;
+  return {
+    ...attempt,
     status:
-      personaReply.state.terminal || turn === 3
+      personaReply.state.terminal ||
+      attempt.userTurn === MAX_CONVERSATION_TURNS
         ? "awaiting_judgment"
         : "active",
     personaState: personaReply.state,
+    error: undefined,
   };
+}
+
+export function applyPersonaReply(
+  attempt: Attempt,
+  personaReply: PersonaReply,
+  now = new Date().toISOString(),
+): Attempt {
+  let next = attempt;
+  personaReply.actions.forEach((action, index) => {
+    next = appendPersonaAction(next, action, index + 1, now);
+  });
+  return finalizePersonaTurn(next, personaReply);
 }
 
 export function replayResponses(
   scenario: Scenario,
-  responses: Array<{ turn: 1 | 2 | 3; body: string }>,
+  responses: Array<{ turn: ConversationTurn; body: string }>,
   attemptId: string,
 ): Attempt {
   let attempt = createAttempt(scenario, attemptId, "server-replay");
@@ -259,7 +372,7 @@ export function replayResponses(
 export function userResponses(attempt: Attempt) {
   return attempt.messages
     .filter(
-      (message): message is PracticeMessage & { turn: 1 | 2 | 3 } =>
+      (message): message is PracticeMessage & { turn: ConversationTurn } =>
         message.speaker === "you" && message.turn > 0,
     )
     .map(({ turn, body }) => ({ turn, body }));

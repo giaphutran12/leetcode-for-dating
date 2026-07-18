@@ -29,3 +29,10 @@ export const OUTCOME_LABELS: Record<OutcomeCode, string> = {
 };
 
 export const MAX_RESPONSE_LENGTH = 420;
+export const MIN_CONVERSATION_TURNS = 3;
+export const MAX_CONVERSATION_TURNS = 6;
+export const DRAFT_IDLE_PREPARE_MS = 5_000;
+export const MIN_PREPARE_TYPING_MS = 900;
+export const MAX_DRAFT_PREPARATIONS_PER_TURN = 3;
+export const MESSAGE_DELIVERED_DELAY_MS = 180;
+export const MESSAGE_SEEN_DELAY_MS = 420;

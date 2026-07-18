@@ -5,7 +5,13 @@ import type {
   JudgeErrorCode,
   JudgeRequest,
 } from "../../src/domain/types";
-import { replayResponses } from "../../src/engine/conversationEngine";
+import {
+  MIN_CONVERSATION_TURNS,
+} from "../../src/domain/constants";
+import {
+  personaConversationStore,
+  type PersonaConversationStore,
+} from "../persona/store";
 import {
   aiSdkJudgeProvider,
   type JudgeProvider,
@@ -62,6 +68,7 @@ function isTransient(code: JudgeErrorCode): boolean {
 export async function judgeAttempt(
   request: JudgeRequest,
   provider: JudgeProvider = aiSdkJudgeProvider,
+  conversationStore: PersonaConversationStore = personaConversationStore,
 ): Promise<JudgeApiResponse> {
   if (!process.env.OPENAI_API_KEY && provider === aiSdkJudgeProvider) {
     return {
@@ -83,22 +90,42 @@ export async function judgeAttempt(
     };
   }
 
-  const attempt = replayResponses(
-    scenario,
-    request.responses,
-    request.attemptId,
-  );
-  const replayedResponses = attempt.messages.filter(
-    (message) => message.speaker === "you",
-  );
-  if (replayedResponses.length !== request.responses.length) {
+  if (
+    !conversationStore.responsesMatch(
+      request.attemptId,
+      request.scenarioId,
+      request.responses,
+    )
+  ) {
     return {
       ok: false,
       retryable: false,
       code: "judge_invalid_output",
-      message: "The submitted turns do not match the canonical conversation.",
+      message:
+        "The submitted turns do not match the server-owned conversation.",
     };
   }
+  const storedAttempt = conversationStore.getAttempt(
+    request.attemptId,
+    request.scenarioId,
+  );
+  if (
+    !storedAttempt ||
+    (!storedAttempt.personaState.terminal &&
+      storedAttempt.userTurn < MIN_CONVERSATION_TURNS)
+  ) {
+    return {
+      ok: false,
+      retryable: false,
+      code: "judge_invalid_output",
+      message: "The conversation is not ready for judgment.",
+    };
+  }
+  const attempt =
+    conversationStore.prepareForJudgment(
+      request.attemptId,
+      request.scenarioId,
+    ) ?? storedAttempt;
   const hardGate = detectHardGates(attempt);
 
   let lastError: JudgeServiceError | undefined;

@@ -49,7 +49,7 @@ acceptance behavior.
 ## One-sentence product
 
 RizzCode is LeetCode-style practice for dating and grounded social fluency: users
-complete realistic three-turn situations, receive specific feedback, gain XP, and
+complete realistic bounded conversations, receive specific feedback, gain XP, and
 learn to create and sustain mutual interest without becoming fake or performative.
 
 ## Product thesis
@@ -113,7 +113,8 @@ These decisions are final for this implementation:
 4. The product is text-first, but text is only the interface.
 5. Text simulates both spoken in-person situations and actual messaging situations.
 6. Every scenario is labeled `In Person` or `Messaging`.
-7. A normal attempt contains exactly three user-authored responses.
+7. A normal attempt contains three to six user-authored responses. The user may request
+   judgment after turn three, while a persona exit or boundary may end earlier.
 8. The character reacts to the user's actual words after each response.
 9. The product must feel fun, not merely safe.
 10. Humor, playfulness, personality, and enjoyable conversation affect the score.
@@ -137,13 +138,15 @@ These decisions are final for this implementation:
     exposed to browser code.
 24. If judging is unavailable, preserve the completed transcript and offer `Retry
     judgment`. Do not invent an official score or award XP.
-25. The MVP persona uses the canonical authored deterministic engine so both comparison
-    builds receive the same reactions for the same inputs.
-26. An LLM persona is later scope. The LLM requirement in this build applies to the
-    official judge.
+25. The MVP persona uses a canonical server-side LLM conversation with authored
+    fallbacks. The default low-latency persona model is `gpt-5-nano`.
+26. Messaging drafts may prepare a reply after five idle seconds without committing a
+    turn. Only an explicit send advances the canonical conversation.
 27. The judge must use Vercel AI SDK v6 with the direct OpenAI provider.
 28. The server reads `OPENAI_API_KEY` from the existing private `.env.local`. No builder
     may replace the Vercel AI SDK with a raw OpenAI fetch or another LLM SDK.
+29. All ten scenarios are available immediately. Completion affects progress and the
+    recommended next rep, not access.
 
 ## What the product is not
 
@@ -171,12 +174,12 @@ The product has five connected layers:
 2. **Curriculum**
    - Organizes practice into Spark and Connection.
 3. **Practice**
-   - Runs an in-person or messaging scenario for up to three user turns.
+   - Runs an in-person or messaging scenario for three to six user turns.
 4. **Judgment**
    - Produces an evidence-backed score, verdict, feedback, improved response, and
      simulated likely outcome.
 5. **Progression**
-   - Awards practice XP, unlocks scenarios, displays achievements, and may offer one
+   - Awards practice XP, recommends scenarios, displays achievements, and may offer one
      lightweight Side Quest.
 
 ## User journey
@@ -188,14 +191,15 @@ The product has five connected layers:
 3. The user completes or skips four questions.
 4. RizzCode recommends a starting module and two skill priorities.
 5. The user enters the first recommended scenario.
-6. The user authors three responses.
+6. The user authors at least three responses, continues up to six if useful, or reaches
+   an earlier persona or boundary exit.
 7. RizzCode shows the result and awards XP.
 8. The user retries or returns to the curriculum.
 
 ### Returning visit
 
 1. The user sees current level, XP, streak, module progress, and next challenge.
-2. The user can resume the recommended scenario or choose an unlocked one.
+2. The user can resume the recommended scenario or choose any of the ten scenarios.
 3. Previous best score and likely XP improvement are visible.
 4. Progress survives refresh through versioned local storage.
 
@@ -366,7 +370,7 @@ required for this implementation.
 
 ## Scenario catalog
 
-Seed exactly ten functional scenarios. A decorative card without a playable three-turn
+Seed exactly ten functional scenarios. A decorative card without a playable bounded
 flow does not count.
 
 | # | Module | Mode | Difficulty | Scenario | Primary objective |
@@ -397,7 +401,7 @@ Every scenario must define:
 - Opening kind
 - Persona
 - Success signals
-- Authored deterministic reply graph
+- Authored fallback reply graph
 - Supported outcome codes
 
 The same scenario data must drive cards, practice, fallback replies, judging signals,
@@ -480,7 +484,10 @@ Suggested persona reply:
 
 ```ts
 export interface PersonaReply {
-  reply: string;
+  actions: Array<
+    | { kind: "text"; body: string; delayMs: number }
+    | { kind: "reaction"; body: string; delayMs: number }
+  >;
   state: PersonaState;
   interestChange: "down" | "same" | "up";
   terminalReason:
@@ -492,12 +499,11 @@ export interface PersonaReply {
 }
 ```
 
-## Three-turn state machine
+## Bounded conversation state machine
 
-Three turns means three user-authored responses.
-
-The current prototype starts at `userTurns = 1` and only collects two new responses.
-Replace that behavior.
+A normal attempt contains at least three and at most six user-authored responses. The
+user may request judgment after turn three. A clear persona exit, user exit, or boundary
+may end earlier.
 
 Normal flow:
 
@@ -508,6 +514,12 @@ READY
   -> AWAITING_USER turn 2
   -> GENERATING_PERSONA
   -> AWAITING_USER turn 3
+  -> GENERATING_PERSONA
+  -> AWAITING_USER turn 4 | JUDGING
+  -> GENERATING_PERSONA
+  -> AWAITING_USER turn 5 | JUDGING
+  -> GENERATING_PERSONA
+  -> AWAITING_USER turn 6 | JUDGING
   -> GENERATING_FINAL_REACTION
   -> JUDGING
   -> COMPLETE
@@ -528,13 +540,14 @@ Rules:
 - Every valid user submission increments the turn exactly once.
 - Every normal user response receives a persona reaction.
 - The final persona reaction occurs before judgment.
-- A fourth response cannot mutate a completed attempt.
+- A seventh response cannot mutate a completed attempt.
 - Empty or whitespace-only input does not advance state.
 - Input longer than 420 characters does not advance state.
 - Disable submit while generating or judging.
 - Double-clicking submit records one response.
 - A clear persona exit, user exit, or stop-level violation may end early.
 - A graceful early exit is judged fairly and is not penalized for missing turns.
+- After turn three, the user can choose `End & get judgment`.
 - Reset creates a new attempt ID and discards pending replies from the old attempt.
 - Persona and judge operations must be idempotent by attempt ID and turn.
 
@@ -546,6 +559,9 @@ export interface PracticeMessage {
   speaker: "you" | "her";
   body: string;
   turn: number;
+  kind: "text" | "reaction";
+  sequence: number;
+  deliveryStatus?: "sent" | "delivered" | "seen";
   createdAt: string;
 }
 
@@ -781,7 +797,7 @@ export interface JudgeRequest {
   attemptId: string;
   scenarioId: string;
   responses: Array<{
-    turn: 1 | 2 | 3;
+    turn: 1 | 2 | 3 | 4 | 5 | 6;
     body: string;
   }>;
 }
@@ -810,9 +826,8 @@ Server responsibilities:
 1. Load the canonical scenario by `scenarioId`.
 2. Reject client-supplied persona replies, persona state, rubric scores, outcomes, XP,
    gates, or leaderboard totals.
-3. Normalize and bound the three user responses.
-4. Reconstruct the canonical transcript and final persona state by replaying the shared
-   authored persona engine.
+3. Normalize and bound one to six contiguous user responses.
+4. Require those responses to match the canonical server-owned adaptive conversation.
 5. Run deterministic hard-gate detection before the model call.
 6. Send the scenario, mode, objective, boundaries, persona state, rubric, and transcript
    to the judge model.
@@ -820,7 +835,8 @@ Server responsibilities:
 8. Verify that each evidence excerpt is an exact substring of the cited user turn.
 9. Recalculate `rawScore`, apply hard-gate caps, and derive `finalScore` and `verdict`
    on the server.
-10. Reject malformed or unsupported claims.
+10. Reject malformed or unsupported claims, including escalation outcomes contradicted
+    by the persona's actual reply.
 11. Return a validated `JudgeResult`.
 
 The model evaluates the five rubric dimensions and writes the coaching. Deterministic
@@ -926,27 +942,24 @@ export interface JudgeEngine {
 
 ## Persona engine
 
-The persona is separate from the judge. The MVP uses the canonical authored
-deterministic conversation engine behind `ConversationEngine`. This keeps dialogue,
-latency, failure behavior, and judged transcripts comparable across both builds.
+The persona is separate from the judge. Production persona reactions come from a
+server-side LLM using Vercel AI SDK v6, Zod, `generateText()`, and `Output.object()`.
+The default model is `gpt-5-nano` with minimal reasoning and low verbosity. The server
+owns the canonical transcript, state transitions, idempotency, and terminal state.
 
-An LLM-backed persona is later scope. The judge must be LLM-backed in this build.
-The client and judge server must import the same pure persona transition code so the
-server can reconstruct the transcript from user-authored responses.
+Persona output must contain one to three short actions, at least one text action, and
+only allowlisted emoji reactions. The prompt requests at most one question. Engagement
+may move one level. Boundary state cannot decrease. `completed` cannot end a normal
+exchange before turn three, while persona exit, user exit, and explicit boundary can
+end earlier.
 
-Deterministic branch order is:
+If generation is missing, invalid, timed out, or rate limited, the server records the
+authored scenario fallback as the canonical reaction and returns `usedFallback: true`.
 
-1. Boundary signal
-2. User exit signal
-3. Low-interest signal
-4. Positive scenario signal
-5. Current engagement
-
-Match normalized whole words or phrases from the scenario lists, never substring
-fragments inside unrelated words. Boundary ends the exchange. Exit returns one polite
-closing reply and ends it. Positive moves engagement up one level. Low-interest moves it
-down one level. Otherwise engagement stays the same. The engine is deterministic and
-uses no randomness.
+Messaging mode may call `POST /api/persona/prepare` after five seconds without keyboard
+input. Preparation does not commit the turn, is reusable only for the exact same body,
+is capped at three generations per turn, and returns no persona text. Only
+`POST /api/persona` commits and returns the reaction.
 
 Rules:
 
@@ -982,7 +995,7 @@ Include:
 - Levels
 - Current rank
 - Streak
-- Scenario unlocks
+- Open scenario access
 - Retry improvement
 - Personal best
 - Achievements
@@ -1234,7 +1247,7 @@ The exact routing library is an implementation choice, but these views must exis
    - Recommended starting track
 3. **Curriculum and scenario selection**
    - Spark and Connection
-   - Locked, available, and complete states
+   - All ten scenarios available immediately
    - XP, level, and next recommendation
 4. **Scenario introduction**
    - Mode badge
@@ -1243,9 +1256,10 @@ The exact routing library is an implementation choice, but these views must exis
    - Visible context
    - Difficulty
 5. **Practice**
-   - Exactly three user-authored turns
+   - Three to six user-authored turns, with earlier natural exits
    - Character reply state
    - Correct input language for the mode
+   - Messaging Sent, Delivered, Seen, and typing states
 6. **Result**
    - Score out of 10
    - Verdict
@@ -1291,12 +1305,13 @@ Implement and test:
 - First visit
 - Returning user
 - Skipped onboarding
-- Scenario locked
 - Scenario available
 - Scenario complete
 - Empty input
 - Maximum-length input
 - Character thinking
+- Messaging draft preparation after five idle seconds
+- Sent, Delivered, and Seen message states
 - Judgment in progress
 - Double-submit prevention
 - Character reply failure
@@ -1403,7 +1418,8 @@ src/
     taste.css
 ```
 
-Keep domain functions pure where practical. The score, verdict, XP, gates, unlocks, and
+Keep domain functions pure where practical. The score, verdict, XP, gates, next-rep
+selection, and
 storage migrations must be testable without rendering React.
 
 ## Tests
@@ -1426,13 +1442,13 @@ Required scripts:
 Cover:
 
 - State transitions
-- Three user-authored turns
+- Three-to-six-turn state transitions
 - Hard gates and caps
 - Rubric arithmetic
 - Verdict thresholds
 - XP calculation
 - Retry XP anti-farming
-- Scenario unlocking
+- Open scenario availability
 - Storage validation
 - Corrupt storage recovery
 - Fallback branch selection
@@ -1457,11 +1473,11 @@ Cover:
 
 ### Required acceptance fixtures
 
-1. A scene-only bus-stop scenario begins at `0 of 3`, asks `What would you say?`,
+1. A scene-only bus-stop scenario begins at `0 / 6`, asks `What would you say?`,
    and does not invent an opening message from her.
 2. A messaging scenario displays its incoming message and asks `What would you text?`.
-3. Exactly three valid user submissions complete a normal attempt.
-4. A fourth submission cannot mutate a completed attempt.
+3. Judgment becomes available after three valid user submissions.
+4. A sixth response completes the bounded window and a seventh cannot mutate it.
 5. Empty, whitespace-only, and 421-character submissions do not advance the turn.
 6. Double-clicking submit records one response and one persona reaction.
 7. Persona replies remain consistent with declared scenario facts.
@@ -1491,6 +1507,10 @@ Cover:
 28. Every accepted rubric item cites an exact excerpt from a real user turn.
 29. Two materially different transcripts do not receive a reused hardcoded judgment.
 30. A live, opt-in judge smoke test succeeds with the configured runtime provider.
+31. Five idle Messaging seconds prepare a reply without committing the draft.
+32. Editing a prepared draft cannot consume the stale reply.
+33. Messaging bubbles visibly progress through Sent, Delivered, and Seen.
+34. All ten scenarios are playable before any completion.
 
 ### End-to-end path
 
@@ -1498,7 +1518,7 @@ Cover:
 First visit
   -> complete or skip onboarding
   -> enter a recommended scenario
-  -> author three responses
+  -> author three to six responses
   -> receive input-sensitive judgment
   -> gain XP
   -> return to curriculum
@@ -1529,7 +1549,9 @@ First visit
 1. Replace the global canned reply sequence.
 2. Implement the explicit attempt state machine.
 3. Implement authored persona fallback graphs.
-4. Add unit tests before connecting the UI.
+4. Add the server-side adaptive persona and canonical conversation store.
+5. Add idle Messaging preparation and monotonic delivery states.
+6. Add unit tests before connecting the UI.
 
 ### Phase 3: LLM judge
 
@@ -1554,12 +1576,12 @@ First visit
 1. Add the four-question onboarding.
 2. Add skip behavior.
 3. Recommend Spark or Connection.
-4. Render all ten scenarios and unlock state.
+4. Render all ten scenarios as immediately available.
 
 ### Phase 6: Practice and results
 
 1. Add mode-specific labels.
-2. Connect the three-turn engine.
+2. Connect the bounded three-to-six-turn engine.
 3. Add thinking, judging, persona fallback, judge error, and retry states.
 4. Replace the hardcoded score.
 5. Render evidence, verdict, improved response, and likely outcome.
@@ -1567,7 +1589,7 @@ First visit
 ### Phase 7: Gamification
 
 1. Add XP and levels.
-2. Add personal best and unlocks.
+2. Add personal bests and recommended next reps.
 3. Add achievements.
 4. Add seeded demo leaderboard.
 5. Add private real-world milestones.
@@ -1643,12 +1665,12 @@ Do not implement in this build:
 
 ## Later roadmap
 
-Only after the MVP proves the three-turn loop:
+Only after the MVP proves the bounded adaptive loop:
 
-1. Optional provider-backed persona for more natural reactions
+1. Durable shared persona conversation storage
 2. Supabase accounts and shared progress
-3. Real public leaderboard using server-verified practice XP
-4. More scenarios and native Vietnamese content review
+3. Elo-style response ratings and a real server-verified public leaderboard
+4. More scenarios, curriculum filters, and native Vietnamese content review
 5. Voice input over the same scenario and judging contracts
 6. Optional user-provided personalization
 7. Carefully scoped profile research, only if the team explicitly reopens it
@@ -1721,8 +1743,11 @@ The implementation is done only when:
 - The selected Taste visual identity remains recognizable.
 - Ten scenarios are genuinely playable.
 - Both In Person and Messaging modes work.
-- The user authors exactly three responses in a normal attempt.
+- The user authors three to six responses in a normal attempt.
 - The character reacts to the submitted content.
+- Messaging draft inactivity prepares without committing, and edited drafts cannot
+  consume stale prepared replies.
+- Messaging bubbles progress through Sent, Delivered, and Seen.
 - The result changes when the transcript changes.
 - The official result comes from the server-side LLM judge.
 - The judge uses Vercel AI SDK v6 and the direct `@ai-sdk/openai` provider.
@@ -1734,6 +1759,7 @@ The implementation is done only when:
 - A graceful exit can score highly.
 - The user receives a verdict, improved response, likely outcome, and XP.
 - Progress survives refresh.
+- All ten scenarios remain available without completion gates.
 - The demo leaderboard uses practice XP only and is labeled `Demo`.
 - Private milestones do not affect public rank.
 - Side Quests stop after a recommendation and handoff prompt.

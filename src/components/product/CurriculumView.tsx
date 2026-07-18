@@ -1,15 +1,10 @@
 import {
   ArrowRight,
   CheckCircle,
-  LockSimple,
   Sparkle,
 } from "@phosphor-icons/react";
 import { useRizzCode } from "../../context/RizzCodeContext";
-import {
-  isScenarioUnlocked,
-  masteryXP,
-  nextUnlockedScenario,
-} from "../../domain/progression";
+import { masteryXP, nextPracticeScenario } from "../../domain/progression";
 import { modules, scenarios } from "../../data/scenarios";
 import {
   DifficultyBadge,
@@ -23,7 +18,7 @@ export function CurriculumView({
   notice?: string;
 }) {
   const { profile, progress } = useRizzCode();
-  const next = nextUnlockedScenario(progress, profile);
+  const next = nextPracticeScenario(progress, profile);
 
   return (
     <ProductShell
@@ -95,11 +90,6 @@ export function CurriculumView({
             </header>
             <div className="rizz-scenario-grid">
               {moduleScenarios.map((scenario, index) => {
-                const unlocked = isScenarioUnlocked(
-                  scenario,
-                  progress,
-                  profile,
-                );
                 const complete = progress.completedScenarioIds.includes(
                   scenario.id,
                 );
@@ -112,19 +102,15 @@ export function CurriculumView({
                 return (
                   <article
                     className="rizz-scenario-card"
-                    data-state={
-                      complete ? "complete" : unlocked ? "available" : "locked"
-                    }
+                    data-state={complete ? "complete" : "available"}
                     key={scenario.id}
                   >
                     <div className="rizz-scenario-card__top">
                       <span>{String(index + 1).padStart(2, "0")}</span>
                       {complete ? (
                         <CheckCircle size={20} weight="fill" />
-                      ) : unlocked ? (
-                        <span className="rizz-available">Available</span>
                       ) : (
-                        <LockSimple size={19} weight="fill" />
+                        <span className="rizz-available">Available</span>
                       )}
                     </div>
                     <div className="rizz-badges">
@@ -138,21 +124,13 @@ export function CurriculumView({
                         {best === undefined ? "No score yet" : `Best ${best}/10`}
                       </span>
                       <span>
-                        {unlocked
-                          ? `Up to ${possibleGain + (complete ? 0 : 10)} XP`
-                          : "Complete the prior rep"}
+                        Up to {possibleGain + (complete ? 0 : 10)} XP
                       </span>
                     </div>
-                    {unlocked ? (
-                      <a href={`/practice/${scenario.id}`}>
-                        {complete ? "Run it again" : "Enter scenario"}
-                        <ArrowRight size={17} />
-                      </a>
-                    ) : (
-                      <button type="button" disabled>
-                        Locked
-                      </button>
-                    )}
+                    <a href={`/practice/${scenario.id}`}>
+                      {complete ? "Run it again" : "Enter scenario"}
+                      <ArrowRight size={17} />
+                    </a>
                   </article>
                 );
               })}

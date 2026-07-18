@@ -6,13 +6,33 @@ import {
   useState,
 } from "react";
 import { requestJudgment as callJudge } from "../api/judgeClient";
-import { useRizzCode } from "../context/RizzCodeContext";
-import { MAX_RESPONSE_LENGTH } from "../domain/constants";
-import type { Attempt, JudgeResult, Scenario } from "../domain/types";
 import {
-  appendTurn,
+  preparePersonaReply,
+  requestPersonaReply,
+} from "../api/personaClient";
+import { useRizzCode } from "../context/RizzCodeContext";
+import {
+  DRAFT_IDLE_PREPARE_MS,
+  MAX_CONVERSATION_TURNS,
+  MESSAGE_DELIVERED_DELAY_MS,
+  MESSAGE_SEEN_DELAY_MS,
+  MIN_CONVERSATION_TURNS,
+  MIN_PREPARE_TYPING_MS,
+  MAX_RESPONSE_LENGTH,
+} from "../domain/constants";
+import type {
+  Attempt,
+  ConversationTurn,
+  JudgeResult,
+  PersonaReply,
+  Scenario,
+} from "../domain/types";
+import {
+  appendPersonaAction,
+  beginTurn,
   createAttempt,
-  safePersonaReply,
+  finalizePersonaTurn,
+  updateUserMessageDelivery,
   userResponses,
   validateResponse,
 } from "../engine/conversationEngine";
@@ -23,8 +43,13 @@ type JudgmentReceipt = {
   unlockedAchievements: string[];
 };
 
-const personaDelay = () =>
-  new Promise<void>((resolve) => window.setTimeout(resolve, 240));
+type PendingTurn = {
+  turn: ConversationTurn;
+  body: string;
+};
+
+const wait = (delayMs: number) =>
+  new Promise<void>((resolve) => window.setTimeout(resolve, delayMs));
 
 export function useRizzPracticeSession(scenario: Scenario) {
   const { recordJudgment, saveAttempt } = useRizzCode();
@@ -34,15 +59,76 @@ export function useRizzPracticeSession(scenario: Scenario) {
   const [input, setInput] = useState("");
   const [inputError, setInputError] = useState<string>();
   const [fallbackNotice, setFallbackNotice] = useState<string>();
+  const [draftPreparing, setDraftPreparing] = useState(false);
   const [receipt, setReceipt] = useState<JudgmentReceipt>();
   const busyRef = useRef(false);
   const operationRef = useRef(0);
   const attemptRef = useRef(attempt);
+  const pendingTurnRef = useRef<PendingTurn | undefined>(undefined);
+  const draftAbortRef = useRef<AbortController | undefined>(undefined);
+
+  const commitAttempt = useCallback((next: Attempt) => {
+    attemptRef.current = next;
+    setAttempt(next);
+  }, []);
 
   useEffect(() => {
     attemptRef.current = attempt;
     saveAttempt(attempt);
   }, [attempt, saveAttempt]);
+
+  useEffect(() => {
+    draftAbortRef.current?.abort();
+    setDraftPreparing(false);
+
+    const trimmed = input.trim();
+    const current = attemptRef.current;
+    if (
+      scenario.mode !== "messaging" ||
+      current.status !== "active" ||
+      !trimmed ||
+      trimmed.length > MAX_RESPONSE_LENGTH ||
+      current.userTurn >= MAX_CONVERSATION_TURNS
+    ) {
+      return;
+    }
+
+    const controller = new AbortController();
+    draftAbortRef.current = controller;
+    const attemptId = current.id;
+    const turn = (current.userTurn + 1) as ConversationTurn;
+    const timer = window.setTimeout(async () => {
+      setDraftPreparing(true);
+      const startedAt = performance.now();
+      await preparePersonaReply(
+        {
+          schemaVersion: "1.0",
+          attemptId,
+          scenarioId: scenario.id,
+          turn,
+          body: trimmed,
+        },
+        controller.signal,
+      );
+      const remaining = Math.max(
+        0,
+        MIN_PREPARE_TYPING_MS - (performance.now() - startedAt),
+      );
+      await wait(remaining);
+      if (
+        !controller.signal.aborted &&
+        attemptRef.current.id === attemptId &&
+        attemptRef.current.status === "active"
+      ) {
+        setDraftPreparing(false);
+      }
+    }, DRAFT_IDLE_PREPARE_MS);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [attempt.id, attempt.status, input, scenario.id, scenario.mode]);
 
   const finishJudgment = useCallback(
     async (pendingAttempt: Attempt, operation: number) => {
@@ -51,7 +137,7 @@ export function useRizzPracticeSession(scenario: Scenario) {
         status: "awaiting_judgment",
         error: undefined,
       };
-      setAttempt(judgingAttempt);
+      commitAttempt(judgingAttempt);
       const apiResult = await callJudge({
         schemaVersion: "1.0",
         attemptId: pendingAttempt.id,
@@ -68,17 +154,23 @@ export function useRizzPracticeSession(scenario: Scenario) {
       }
 
       if (!apiResult.ok) {
-        const errored: Attempt = {
+        commitAttempt({
           ...judgingAttempt,
           status: "error",
-          error: { code: apiResult.code, message: apiResult.message },
-        };
-        setAttempt(errored);
+          error: {
+            code: apiResult.code,
+            message: apiResult.message,
+            retryable: apiResult.retryable,
+          },
+        });
         busyRef.current = false;
         return;
       }
 
-      const judgmentReceipt = recordJudgment(pendingAttempt, apiResult.result);
+      const judgmentReceipt = recordJudgment(
+        pendingAttempt,
+        apiResult.result,
+      );
       const complete: Attempt = {
         ...judgingAttempt,
         status: "complete",
@@ -88,10 +180,137 @@ export function useRizzPracticeSession(scenario: Scenario) {
         completedAt: new Date().toISOString(),
       };
       setReceipt(judgmentReceipt);
-      setAttempt(complete);
+      commitAttempt(complete);
       busyRef.current = false;
     },
-    [recordJudgment, scenario.id],
+    [commitAttempt, recordJudgment, scenario.id],
+  );
+
+  const revealReply = useCallback(
+    async (
+      withUser: Attempt,
+      reply: PersonaReply,
+      operation: number,
+    ): Promise<Attempt | undefined> => {
+      let visual = withUser;
+      for (const [index, action] of reply.actions.entries()) {
+        await wait(action.delayMs);
+        if (
+          operationRef.current !== operation ||
+          attemptRef.current.id !== withUser.id
+        ) {
+          busyRef.current = false;
+          return undefined;
+        }
+        visual = appendPersonaAction(
+          visual,
+          action,
+          index + 1,
+        );
+        commitAttempt(visual);
+      }
+      const next = finalizePersonaTurn(visual, reply);
+      commitAttempt(next);
+      return next;
+    },
+    [commitAttempt],
+  );
+
+  const requestReaction = useCallback(
+    async (
+      withUser: Attempt,
+      pending: PendingTurn,
+      operation: number,
+    ) => {
+      const apiResult = await requestPersonaReply({
+        schemaVersion: "1.0",
+        attemptId: withUser.id,
+        scenarioId: scenario.id,
+        turn: pending.turn,
+        body: pending.body,
+      });
+      let conversationAttempt = withUser;
+
+      if (
+        operationRef.current !== operation ||
+        attemptRef.current.id !== withUser.id
+      ) {
+        busyRef.current = false;
+        return;
+      }
+
+      if (!apiResult.ok) {
+        commitAttempt({
+          ...conversationAttempt,
+          status: "error",
+          error: {
+            code: apiResult.code,
+            message: apiResult.message,
+            retryable: apiResult.retryable,
+          },
+        });
+        busyRef.current = false;
+        return;
+      }
+
+      if (scenario.mode === "messaging") {
+        await wait(MESSAGE_DELIVERED_DELAY_MS);
+        if (
+          operationRef.current !== operation ||
+          attemptRef.current.id !== withUser.id
+        ) {
+          busyRef.current = false;
+          return;
+        }
+        conversationAttempt = updateUserMessageDelivery(
+          conversationAttempt,
+          pending.turn,
+          "delivered",
+        );
+        commitAttempt(conversationAttempt);
+
+        await wait(MESSAGE_SEEN_DELAY_MS);
+        if (
+          operationRef.current !== operation ||
+          attemptRef.current.id !== withUser.id
+        ) {
+          busyRef.current = false;
+          return;
+        }
+        conversationAttempt = updateUserMessageDelivery(
+          conversationAttempt,
+          pending.turn,
+          "seen",
+        );
+        commitAttempt(conversationAttempt);
+      }
+
+      setFallbackNotice(
+        apiResult.usedFallback
+          ? "The AI reaction failed, so this turn used its authored fallback."
+          : undefined,
+      );
+      const next = await revealReply(
+        conversationAttempt,
+        apiResult.reply,
+        operation,
+      );
+      if (!next) return;
+      pendingTurnRef.current = undefined;
+
+      if (next.status === "awaiting_judgment") {
+        await finishJudgment(next, operation);
+      } else {
+        busyRef.current = false;
+      }
+    },
+    [
+      commitAttempt,
+      finishJudgment,
+      revealReply,
+      scenario.id,
+      scenario.mode,
+    ],
   );
 
   const submit = useCallback(
@@ -108,54 +327,71 @@ export function useRizzPracticeSession(scenario: Scenario) {
         setInputError(`Keep it under ${MAX_RESPONSE_LENGTH} characters.`);
         return;
       }
-      const body = validation.body;
-      if (current.userTurn >= 3) return;
+
+      const withUser = beginTurn(current, validation.body);
+      if (withUser === current || withUser.userTurn === 0) return;
 
       busyRef.current = true;
+      draftAbortRef.current?.abort();
+      setDraftPreparing(false);
       const operation = ++operationRef.current;
-      const turn = (current.userTurn + 1) as 1 | 2 | 3;
+      const pending: PendingTurn = {
+        turn: withUser.userTurn,
+        body: validation.body,
+      };
+      pendingTurnRef.current = pending;
       setInput("");
       setInputError(undefined);
-      setAttempt({ ...current, status: "awaiting_reply" });
-
-      await personaDelay();
-      if (
-        operationRef.current !== operation ||
-        attemptRef.current.id !== current.id
-      ) {
-        busyRef.current = false;
-        return;
-      }
-
-      const reaction = await safePersonaReply({
-        scenario,
-        body,
-        turn,
-        personaState: current.personaState,
-      });
-      if (reaction.usedFallback) {
-        setFallbackNotice(
-          "The live reaction hiccupped, so this scenario used its authored fallback.",
-        );
-      }
-      const next = appendTurn(current, body, reaction.result);
-      setAttempt(next);
-
-      if (next.status === "awaiting_judgment") {
-        await finishJudgment(next, operation);
-      } else {
-        busyRef.current = false;
-      }
+      commitAttempt(withUser);
+      await requestReaction(withUser, pending, operation);
     },
-    [finishJudgment, input, scenario],
+    [commitAttempt, input, requestReaction],
   );
+
+  const retryPersona = useCallback(async () => {
+    const current = attemptRef.current;
+    const pending = pendingTurnRef.current;
+    if (
+      busyRef.current ||
+      current.status !== "error" ||
+      current.error?.code !== "persona_unavailable" ||
+      current.error.retryable === false ||
+      !pending
+    ) {
+      return;
+    }
+    busyRef.current = true;
+    const operation = ++operationRef.current;
+    const withUser: Attempt = {
+      ...current,
+      status: "awaiting_reply",
+      error: undefined,
+    };
+    commitAttempt(withUser);
+    await requestReaction(withUser, pending, operation);
+  }, [commitAttempt, requestReaction]);
+
+  const endConversation = useCallback(async () => {
+    const current = attemptRef.current;
+    if (
+      busyRef.current ||
+      current.status !== "active" ||
+      current.userTurn < MIN_CONVERSATION_TURNS
+    ) {
+      return;
+    }
+    busyRef.current = true;
+    const operation = ++operationRef.current;
+    await finishJudgment(current, operation);
+  }, [finishJudgment]);
 
   const retryJudgment = useCallback(async () => {
     const current = attemptRef.current;
     if (
       busyRef.current ||
-      (current.status !== "error" &&
-        current.status !== "awaiting_judgment")
+      current.status !== "error" ||
+      current.error?.code.startsWith("persona_") ||
+      current.error?.retryable === false
     ) {
       return;
     }
@@ -167,14 +403,15 @@ export function useRizzPracticeSession(scenario: Scenario) {
   const reset = useCallback(() => {
     operationRef.current += 1;
     busyRef.current = false;
+    draftAbortRef.current?.abort();
+    pendingTurnRef.current = undefined;
     const next = createAttempt(scenario);
-    attemptRef.current = next;
-    setAttempt(next);
+    commitAttempt(next);
     setInput("");
     setInputError(undefined);
     setFallbackNotice(undefined);
     setReceipt(undefined);
-  }, [scenario]);
+  }, [commitAttempt, scenario]);
 
   return {
     attempt,
@@ -184,11 +421,24 @@ export function useRizzPracticeSession(scenario: Scenario) {
     receipt,
     setInput,
     submit,
+    retryPersona,
     retryJudgment,
+    endConversation,
     reset,
+    canEnd:
+      attempt.status === "active" &&
+      attempt.userTurn >= MIN_CONVERSATION_TURNS,
     isBusy:
       attempt.status === "awaiting_reply" ||
       attempt.status === "awaiting_judgment",
+    isPersonaTyping:
+      draftPreparing ||
+      (attempt.status === "awaiting_reply" &&
+        (scenario.mode === "in_person" ||
+          [...attempt.messages]
+            .reverse()
+            .find((message) => message.speaker === "you")?.deliveryStatus ===
+            "seen")),
   };
 }
 

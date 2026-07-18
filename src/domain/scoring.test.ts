@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { getScenario } from "../data/scenarios";
-import { replayResponses } from "../engine/conversationEngine";
+import {
+  appendTurn,
+  createAttempt,
+  replayResponses,
+} from "../engine/conversationEngine";
 import { CRITERIA } from "./constants";
 import {
   detectHardGates,
@@ -111,6 +115,31 @@ describe("hard gates and server-owned arithmetic", () => {
         scenario,
         attempt,
         draft: perfectDraft(response.body, 1, "contact_exchanged"),
+      }),
+    ).toThrow(/outcome/i);
+  });
+
+  it("does not claim contact exchange after the persona declines", () => {
+    const scenario = getScenario("spark-bus-stop")!;
+    const body = "Want to swap numbers and continue this sometime?";
+    const attempt = appendTurn(createAttempt(scenario, "attempt-declined"), body, {
+      actions: [
+        {
+          kind: "text",
+          body: "no thanks, I would rather leave it here",
+          delayMs: 80,
+        },
+      ],
+      interestChange: "up",
+      state: { engagement: "warm", boundary: "none", terminal: false },
+      terminalReason: null,
+    });
+    expect(() =>
+      finalizeJudgeResult({
+        attemptId: attempt.id,
+        scenario,
+        attempt,
+        draft: perfectDraft(body, 1, "contact_exchanged"),
       }),
     ).toThrow(/outcome/i);
   });

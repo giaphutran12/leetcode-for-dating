@@ -3,6 +3,11 @@ import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
 import express from "express";
 import { createJudgeRoute } from "./judge/route";
+import {
+  createPersonaPrepareRoute,
+  createPersonaRoute,
+  createPersonaService,
+} from "./persona/route";
 
 dotenv.config({
   path: process.env.RIZZCODE_ENV_FILE || ".env.local",
@@ -15,6 +20,9 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 app.disable("x-powered-by");
 app.use(express.json({ limit: "24kb" }));
+const personaService = createPersonaService();
+app.post("/api/persona/prepare", createPersonaPrepareRoute(personaService));
+app.post("/api/persona", createPersonaRoute(personaService));
 app.post("/api/judge", createJudgeRoute());
 
 if (process.env.NODE_ENV === "production") {

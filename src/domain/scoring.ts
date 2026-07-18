@@ -1,6 +1,7 @@
 import { CRITERIA, OUTCOME_LABELS } from "./constants";
 import type {
   Attempt,
+  ConversationTurn,
   Evidence,
   HardGate,
   JudgeModelDraft,
@@ -11,7 +12,7 @@ import type {
 type GateMatch = {
   code: string;
   severity: "cap" | "stop";
-  turn: 1 | 2 | 3;
+  turn: ConversationTurn;
   excerpt: string;
   reason: string;
 };
@@ -102,7 +103,7 @@ const solicitationPattern =
 
 function userMessages(attempt: Attempt) {
   return attempt.messages.filter(
-    (message): message is typeof message & { turn: 1 | 2 | 3 } =>
+    (message): message is typeof message & { turn: ConversationTurn } =>
       message.speaker === "you" && message.turn > 0,
   );
 }
@@ -206,9 +207,32 @@ function transcriptSupportsOutcome(
   draft: JudgeModelDraft,
 ): boolean {
   const code = draft.outcome.code;
-  const userText = userMessages(attempt)
-    .map((message) => message.body)
-    .join("\n");
+  const userTurns = userMessages(attempt);
+  const userText = userTurns.map((message) => message.body).join("\n");
+  const acceptancePattern =
+    /\b(yes|yeah|yep|sure|okay|ok|sounds good|let'?s|i(?:'m| am) (?:down|in)|send me yours|text me|here'?s mine)\b/i;
+  const refusalPattern =
+    /\b(no|nope|not interested|do not want|don'?t want|can'?t|cannot|rain check|not tonight|rather not|maybe another time)\b/i;
+  const personaAcceptedAfter = (pattern: RegExp) => {
+    const invitationTurn = [...userTurns]
+      .reverse()
+      .find((message) => pattern.test(message.body))?.turn;
+    if (!invitationTurn) return false;
+    const personaText = attempt.messages
+      .filter(
+        (message) =>
+          message.speaker === "her" && message.turn >= invitationTurn,
+      )
+      .map((message) => message.body)
+      .join("\n");
+    return (
+      acceptancePattern.test(personaText) &&
+      !refusalPattern.test(personaText)
+    );
+  };
+  const contactPattern = /\b(number|contact|swap|text you)\b/i;
+  const datePattern =
+    /\b(coffee|dinner|lunch|date|join me|want to|saturday|thursday)\b/i;
 
   if (!scenario.supportedOutcomeCodes.includes(code)) {
     return false;
@@ -216,20 +240,18 @@ function transcriptSupportsOutcome(
   if (code === "contact_exchanged") {
     return (
       attempt.personaState.engagement === "warm" &&
-      /\b(number|contact|swap|text you)\b/i.test(userText)
+      contactPattern.test(userText) &&
+      personaAcceptedAfter(contactPattern)
     );
   }
   if (code === "date_invited") {
-    return /\b(coffee|dinner|lunch|date|join me|want to|saturday|thursday)\b/i.test(
-      userText,
-    );
+    return datePattern.test(userText);
   }
   if (code === "date_agreed") {
     return (
       attempt.personaState.engagement === "warm" &&
-      /\b(coffee|dinner|lunch|date|join me|want to|saturday|thursday)\b/i.test(
-        userText,
-      )
+      datePattern.test(userText) &&
+      personaAcceptedAfter(datePattern)
     );
   }
   if (code === "graceful_exit") {

@@ -10,7 +10,8 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   webServer: {
-    command: "RIZZCODE_MOCK_JUDGE=1 npm run dev",
+    command:
+      "RIZZCODE_MOCK_PERSONA=1 RIZZCODE_MOCK_JUDGE=1 npm run dev",
     url: "http://127.0.0.1:4173",
     reuseExistingServer: false,
     timeout: 120_000,

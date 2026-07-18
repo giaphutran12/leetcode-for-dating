@@ -78,7 +78,13 @@ const practiceMessageSchema = z.object({
     z.literal(1),
     z.literal(2),
     z.literal(3),
+    z.literal(4),
+    z.literal(5),
+    z.literal(6),
   ]),
+  kind: z.enum(["text", "reaction"]).default("text"),
+  sequence: z.number().int().nonnegative().default(0),
+  deliveryStatus: z.enum(["sent", "delivered", "seen"]).optional(),
   createdAt: z.string(),
 });
 
@@ -87,7 +93,15 @@ const attemptSchema = z
     id: z.string(),
     scenarioId: z.string(),
     messages: z.array(practiceMessageSchema),
-    userTurn: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
+    userTurn: z.union([
+      z.literal(0),
+      z.literal(1),
+      z.literal(2),
+      z.literal(3),
+      z.literal(4),
+      z.literal(5),
+      z.literal(6),
+    ]),
     status: z.enum([
       "idle",
       "active",

@@ -1,6 +1,12 @@
 import { openai } from "@ai-sdk/openai";
 import { generateText, Output } from "ai";
-import type { Attempt, HardGate, JudgeModelDraft, Scenario } from "../../src/domain/types";
+import type {
+  Attempt,
+  ConversationTurn,
+  HardGate,
+  JudgeModelDraft,
+  Scenario,
+} from "../../src/domain/types";
 import { matchesSignal } from "../../src/engine/conversationEngine";
 import { JUDGE_SYSTEM_PROMPT, buildJudgePrompt } from "./prompt";
 import { JudgeModelDraftSchema } from "./schema";
@@ -67,7 +73,7 @@ function fixtureScore(
 export const fixtureJudgeProvider: JudgeProvider = {
   async evaluate({ scenario, attempt, hardGate }) {
     const userMessages = attempt.messages.filter(
-      (message): message is typeof message & { turn: 1 | 2 | 3 } =>
+      (message): message is typeof message & { turn: ConversationTurn } =>
         message.speaker === "you" && message.turn > 0,
     );
     const evidenceMessage = userMessages[userMessages.length - 1];

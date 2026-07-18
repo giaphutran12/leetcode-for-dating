@@ -184,23 +184,7 @@ export function applyJudgment(input: {
   };
 }
 
-export function isScenarioUnlocked(
-  scenario: Scenario,
-  progress: Progress,
-  profile?: UserProfile,
-): boolean {
-  const moduleScenarios = scenarios.filter(
-    (candidate) => candidate.module === scenario.module,
-  );
-  const index = moduleScenarios.findIndex(
-    (candidate) => candidate.id === scenario.id,
-  );
-  if (index === 0) return true;
-  if (profile?.onboardingPlan.orderedScenarioIds[0] === scenario.id) return true;
-  return progress.completedScenarioIds.includes(moduleScenarios[index - 1].id);
-}
-
-export function nextUnlockedScenario(
+export function nextPracticeScenario(
   progress: Progress,
   profile: UserProfile,
 ): Scenario {
@@ -210,10 +194,9 @@ export function nextUnlockedScenario(
   return (
     ordered.find(
       (scenario) =>
-        isScenarioUnlocked(scenario, progress, profile) &&
         !progress.completedScenarioIds.includes(scenario.id),
     ) ??
-    ordered.find((scenario) => isScenarioUnlocked(scenario, progress, profile)) ??
+    ordered[0] ??
     scenarios[0]
   );
 }
