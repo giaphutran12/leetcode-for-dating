@@ -47,14 +47,15 @@ later send reuses the prepared result; edited text cannot consume a stale
 result. Preparation is capped at three generations per turn.
 The preparation response contains no persona text.
 
-The browser never supplies authoritative persona replies or persona state to the judge.
-`POST /api/judge` compares the browser's bounded user-response receipt with the
-server-owned conversation and judges the canonical transcript.
+The browser never authors authoritative persona replies or persona state for the
+judge. After each completed persona turn, the server returns a six-hour signed
+conversation receipt. `POST /api/persona` and `POST /api/judge` verify that
+receipt before restoring or judging the canonical transcript. Tampering,
+cross-attempt reuse, skipped turns, and expired receipts are rejected.
 
-The current comparison server keeps active canonical conversations in a bounded,
-process-local store. This is appropriate for the local comparison build, but it is not a
-multi-region durable database. A hosted multi-instance deployment must replace the store
-with a shared durable adapter before claiming cross-instance conversation recovery.
+The bounded process-local store remains only as an idempotency and draft
+preparation cache. Losing that cache can cause an unseen prepared draft to be
+generated again, but it cannot erase or alter a completed signed conversation.
 
 ## Persona generation
 

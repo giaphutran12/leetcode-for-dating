@@ -36,6 +36,7 @@ export const PersonaRequestSchema = z
     scenarioId: z.string().min(1).max(120),
     turn: ConversationTurnSchema,
     body: z.string().trim().min(1).max(MAX_RESPONSE_LENGTH),
+    sessionToken: z.string().min(80).max(16_000).optional(),
   })
   .strict()
   .superRefine((value, context) => {

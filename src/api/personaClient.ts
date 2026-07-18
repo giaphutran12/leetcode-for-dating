@@ -49,6 +49,7 @@ const responseSchema = z.discriminatedUnion("ok", [
     ]),
     reply: replySchema,
     usedFallback: z.boolean(),
+    sessionToken: z.string().min(80).max(16_000),
   }),
   z.object({
     ok: z.literal(false),

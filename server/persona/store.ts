@@ -78,6 +78,27 @@ export class PersonaConversationStore {
     return record;
   }
 
+  hydrateAttempt(attempt: Attempt): void {
+    this.prune();
+    const existing = this.records.get(attempt.id);
+    if (existing) {
+      if (existing.attempt.scenarioId !== attempt.scenarioId) {
+        throw new Error("persona_conflict: attempt belongs to another scenario");
+      }
+      if (existing.attempt.userTurn >= attempt.userTurn) {
+        existing.touchedAt = Date.now();
+        return;
+      }
+    }
+    this.records.set(attempt.id, {
+      attempt: cloneAttempt(attempt),
+      turns: new Map(),
+      preparationCounts: new Map(),
+      touchedAt: Date.now(),
+    });
+    this.prune();
+  }
+
   inspectTurn(
     scenario: Scenario,
     attemptId: string,

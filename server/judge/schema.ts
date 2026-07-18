@@ -57,6 +57,7 @@ export const JudgeRequestSchema = z
     attemptId: z.string().min(8).max(120),
     scenarioId: z.string().min(1).max(120),
     responses: z.array(ResponseSchema).min(1).max(6),
+    sessionToken: z.string().min(80).max(16_000).optional(),
   })
   .strict()
   .superRefine((value, context) => {

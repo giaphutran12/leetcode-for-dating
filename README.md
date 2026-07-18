@@ -115,11 +115,13 @@ It prints only pass or failure metadata, never the credential or transcript.
   logic.
 - `src/storage/stores.ts` owns the four versioned local records.
 
-Browser requests contain only the scenario ID, attempt ID, contiguous turn, and
-bounded user text. In Messaging mode, a draft is sent for reply preparation
-only after five seconds without keyboard input; it does not advance the
-canonical turn. Client-supplied persona replies, scores, XP, gates, outcomes,
-and leaderboard values are rejected.
+Browser requests contain the scenario ID, attempt ID, contiguous turn, bounded
+user text, and an opaque signed conversation receipt after the first turn. The
+receipt lets any Vercel instance verify and restore the canonical transcript
+without trusting client-authored state. In Messaging mode, a draft is sent for
+reply preparation only after five seconds without keyboard input; it does not
+advance the canonical turn. Client-supplied persona replies, scores, XP, gates,
+outcomes, and leaderboard values are rejected.
 
 ## Local persistence
 
@@ -132,9 +134,10 @@ The MVP stores no secrets and uses only:
 
 At most 100 attempts are retained. A malformed record resets only itself. If
 storage is unavailable, practice continues in memory with a visible warning.
-The canonical active conversation store remains process-local for this
-comparison build. A durable multi-instance deployment still needs a shared
-store adapter.
+Canonical active conversation state travels in a six-hour, tamper-resistant
+server-signed receipt. The process-local cache improves idempotency and draft
+preparation latency, but it is not required for turn-to-turn correctness across
+serverless instances.
 
 ## Deliberately outside this MVP
 

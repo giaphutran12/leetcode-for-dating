@@ -66,6 +66,7 @@ export function useRizzPracticeSession(scenario: Scenario) {
   const attemptRef = useRef(attempt);
   const pendingTurnRef = useRef<PendingTurn | undefined>(undefined);
   const draftAbortRef = useRef<AbortController | undefined>(undefined);
+  const sessionTokenRef = useRef<string | undefined>(undefined);
 
   const commitAttempt = useCallback((next: Attempt) => {
     attemptRef.current = next;
@@ -107,6 +108,7 @@ export function useRizzPracticeSession(scenario: Scenario) {
           scenarioId: scenario.id,
           turn,
           body: trimmed,
+          sessionToken: sessionTokenRef.current,
         },
         controller.signal,
       );
@@ -143,6 +145,7 @@ export function useRizzPracticeSession(scenario: Scenario) {
         attemptId: pendingAttempt.id,
         scenarioId: scenario.id,
         responses: userResponses(pendingAttempt),
+        sessionToken: sessionTokenRef.current,
       });
 
       if (
@@ -228,6 +231,7 @@ export function useRizzPracticeSession(scenario: Scenario) {
         scenarioId: scenario.id,
         turn: pending.turn,
         body: pending.body,
+        sessionToken: sessionTokenRef.current,
       });
       let conversationAttempt = withUser;
 
@@ -252,6 +256,7 @@ export function useRizzPracticeSession(scenario: Scenario) {
         busyRef.current = false;
         return;
       }
+      sessionTokenRef.current = apiResult.sessionToken;
 
       if (scenario.mode === "messaging") {
         await wait(MESSAGE_DELIVERED_DELAY_MS);
@@ -405,6 +410,7 @@ export function useRizzPracticeSession(scenario: Scenario) {
     busyRef.current = false;
     draftAbortRef.current?.abort();
     pendingTurnRef.current = undefined;
+    sessionTokenRef.current = undefined;
     const next = createAttempt(scenario);
     commitAttempt(next);
     setInput("");

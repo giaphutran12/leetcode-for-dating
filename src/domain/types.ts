@@ -157,6 +157,7 @@ export interface JudgeRequest {
   attemptId: string;
   scenarioId: string;
   responses: Array<{ turn: ConversationTurn; body: string }>;
+  sessionToken?: string;
 }
 
 export interface PersonaRequest {
@@ -165,6 +166,7 @@ export interface PersonaRequest {
   scenarioId: string;
   turn: ConversationTurn;
   body: string;
+  sessionToken?: string;
 }
 
 export type PersonaErrorCode =
@@ -180,6 +182,7 @@ export type PersonaApiResponse =
       turn: ConversationTurn;
       reply: PersonaReply;
       usedFallback: boolean;
+      sessionToken: string;
     }
   | {
       ok: false;

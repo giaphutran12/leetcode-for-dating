@@ -6,8 +6,8 @@ import {
 import type {
   Attempt,
   Engagement,
-  PersonaApiResponse,
   PersonaAction,
+  PersonaErrorCode,
   PersonaReply,
   PersonaRequest,
 } from "../../src/domain/types";
@@ -101,18 +101,34 @@ function personaError(
   code: "persona_invalid_request" | "persona_conflict" | "persona_unavailable",
   message: string,
   retryable = false,
-): PersonaApiResponse {
+): PersonaServiceResponse {
   return { ok: false, retryable, code, message };
 }
+
+export type PersonaServiceResponse =
+  | {
+      ok: true;
+      attemptId: string;
+      scenarioId: string;
+      turn: PersonaRequest["turn"];
+      reply: PersonaReply;
+      usedFallback: boolean;
+    }
+  | {
+      ok: false;
+      retryable: boolean;
+      code: PersonaErrorCode;
+      message: string;
+    };
 
 export class PersonaService {
   private readonly inFlight = new Map<
     string,
-    { body: string; promise: Promise<PersonaApiResponse> }
+    { body: string; promise: Promise<PersonaServiceResponse> }
   >();
   private readonly prepareInFlight = new Map<
     string,
-    { body: string; promise: Promise<PersonaApiResponse> }
+    { body: string; promise: Promise<PersonaServiceResponse> }
   >();
 
   constructor(
@@ -121,7 +137,7 @@ export class PersonaService {
     private readonly provider: PersonaProvider = aiSdkPersonaProvider,
   ) {}
 
-  async respond(request: PersonaRequest): Promise<PersonaApiResponse> {
+  async respond(request: PersonaRequest): Promise<PersonaServiceResponse> {
     const scenario = getScenario(request.scenarioId);
     if (!scenario) {
       return personaError(
@@ -189,7 +205,7 @@ export class PersonaService {
     }
   }
 
-  async prepare(request: PersonaRequest): Promise<PersonaApiResponse> {
+  async prepare(request: PersonaRequest): Promise<PersonaServiceResponse> {
     const scenario = getScenario(request.scenarioId);
     if (!scenario) {
       return personaError(
@@ -283,7 +299,7 @@ export class PersonaService {
     scenario: NonNullable<ReturnType<typeof getScenario>>,
     attempt: Attempt,
     prepared?: PreparedPersonaTurn,
-  ): Promise<PersonaApiResponse> {
+  ): Promise<PersonaServiceResponse> {
     const generated =
       prepared ?? (await this.generateReply(request, scenario, attempt));
     const { reply, usedFallback } = generated;
@@ -320,7 +336,7 @@ export class PersonaService {
     request: PersonaRequest,
     scenario: NonNullable<ReturnType<typeof getScenario>>,
     attempt: Attempt,
-  ): Promise<PersonaApiResponse> {
+  ): Promise<PersonaServiceResponse> {
     const prepared = await this.generateReply(request, scenario, attempt);
     if (
       !this.store.savePrepared({

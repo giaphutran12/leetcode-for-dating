@@ -98,10 +98,15 @@ demo leaderboard calculation.
 ## Persistence boundary
 
 Profile, progress, attempts, and private milestones use versioned local storage.
-Active canonical persona conversations use a bounded six-hour process-local
-server store. That is sufficient for this local comparison build, not a claim
-of multi-instance durability. A hosted horizontally scaled version needs a
-shared store adapter.
+Active canonical persona conversations use a six-hour signed receipt returned
+after every completed turn. The receipt is verified server-side and restores
+the exact transcript on another serverless instance. A bounded process-local
+cache still deduplicates same-instance requests and can reuse an unseen
+prepared draft, but cache loss is no longer a correctness failure.
+
+`RIZZCODE_SESSION_SECRET` can provide a dedicated signing secret. If omitted,
+the server derives a domain-separated signing key from `OPENAI_API_KEY`.
+Neither secret is returned to or referenced by client code.
 
 ## Test boundary
 
@@ -110,7 +115,8 @@ idempotency, stale-draft rejection, preparation cost caps, delivery-state
 monotonicity, hard gates, exact evidence, server-owned arithmetic, outcome
 acceptance, XP anti-farming, open scenario access, corrupt storage, storage
 failure, mode-specific UI, onboarding skip, provider failure, malformed output,
-and the acceptance anchors.
+signed-receipt tamper rejection, process-memory loss between turns, and the
+acceptance anchors.
 
 Playwright runs the full UI against the real Next.js route handler with mock
 providers selected only in a non-production server process. Production ignores

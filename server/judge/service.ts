@@ -1,6 +1,7 @@
 import { getScenario } from "../../src/data/scenarios";
 import { detectHardGates, finalizeJudgeResult } from "../../src/domain/scoring";
 import type {
+  Attempt,
   JudgeApiResponse,
   JudgeErrorCode,
   JudgeRequest,
@@ -8,9 +9,10 @@ import type {
 import {
   MIN_CONVERSATION_TURNS,
 } from "../../src/domain/constants";
+import { userResponses } from "../../src/engine/conversationEngine";
 import {
+  PersonaConversationStore,
   personaConversationStore,
-  type PersonaConversationStore,
 } from "../persona/store";
 import {
   aiSdkJudgeProvider,
@@ -68,7 +70,8 @@ function isTransient(code: JudgeErrorCode): boolean {
 export async function judgeAttempt(
   request: JudgeRequest,
   provider: JudgeProvider = aiSdkJudgeProvider,
-  conversationStore: PersonaConversationStore = personaConversationStore,
+  conversationSource: PersonaConversationStore | Attempt =
+    personaConversationStore,
 ): Promise<JudgeApiResponse> {
   if (!process.env.OPENAI_API_KEY && provider === aiSdkJudgeProvider) {
     return {
@@ -90,13 +93,21 @@ export async function judgeAttempt(
     };
   }
 
-  if (
-    !conversationStore.responsesMatch(
-      request.attemptId,
-      request.scenarioId,
-      request.responses,
-    )
-  ) {
+  const storedAttempt =
+    conversationSource instanceof PersonaConversationStore
+      ? conversationSource.getAttempt(request.attemptId, request.scenarioId)
+      : structuredClone(conversationSource);
+  const canonicalResponses = storedAttempt
+    ? userResponses(storedAttempt)
+    : [];
+  const responsesMatch =
+    canonicalResponses.length === request.responses.length &&
+    canonicalResponses.every(
+      (response, index) =>
+        response.turn === request.responses[index]?.turn &&
+        response.body === request.responses[index]?.body,
+    );
+  if (!responsesMatch) {
     return {
       ok: false,
       retryable: false,
@@ -105,10 +116,6 @@ export async function judgeAttempt(
         "The submitted turns do not match the server-owned conversation.",
     };
   }
-  const storedAttempt = conversationStore.getAttempt(
-    request.attemptId,
-    request.scenarioId,
-  );
   if (
     !storedAttempt ||
     (!storedAttempt.personaState.terminal &&
@@ -122,10 +129,19 @@ export async function judgeAttempt(
     };
   }
   const attempt =
-    conversationStore.prepareForJudgment(
-      request.attemptId,
-      request.scenarioId,
-    ) ?? storedAttempt;
+    conversationSource instanceof PersonaConversationStore
+      ? conversationSource.prepareForJudgment(
+          request.attemptId,
+          request.scenarioId,
+        ) ?? storedAttempt
+      : {
+          ...storedAttempt,
+          status: "awaiting_judgment" as const,
+          personaState: {
+            ...storedAttempt.personaState,
+            terminal: true,
+          },
+        };
   const hardGate = detectHardGates(attempt);
 
   let lastError: JudgeServiceError | undefined;
