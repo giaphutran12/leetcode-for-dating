@@ -54,7 +54,11 @@ export function LandingExperience() {
 
   const { profile, progress, plan, persistent } = useProgress();
   const nextId = nextRecommendedScenarioId(progress, plan);
-  const nextScenario = scenarioById(nextId) ?? scenarioById(scenario.id);
+  // scenarioById(scenario.id) was a dead fallback: the prototype scenario id
+  // ("SOC-204") isn't in the real catalog, so it always resolved to undefined.
+  // A missing tonight scenario is already handled by the `tonight ? … : scenario`
+  // branches below, which use the prototype copy as static landing content.
+  const nextScenario = scenarioById(nextId);
   // Before onboarding, send people through the four-question warm-up; once
   // they've done it, the primary CTA drops them straight into tonight's rep.
   const primaryTarget = profile.onboardingComplete
@@ -73,40 +77,49 @@ export function LandingExperience() {
     () => {
       const media = gsap.matchMedia();
 
-      media.add("(min-width: 960px)", () => {
-        ScrollTrigger.create({
-          trigger: desireRef.current,
-          start: "top top+=112",
-          end: "bottom bottom-=80",
-          pin: ".taste-desire__narrative",
-          pinSpacing: false,
-        });
-      });
+      // Every GSAP tween is gated on "(prefers-reduced-motion: no-preference)" so
+      // reduced-motion users get no scroll-driven scrubbing or pinning at all. The
+      // images then rest at their CSS default (full opacity and scale) rather than
+      // the fromTo start state, so nothing renders dimmed or shrunk for them.
+      media.add(
+        "(min-width: 960px) and (prefers-reduced-motion: no-preference)",
+        () => {
+          ScrollTrigger.create({
+            trigger: desireRef.current,
+            start: "top top+=112",
+            end: "bottom bottom-=80",
+            pin: ".taste-desire__narrative",
+            pinSpacing: false,
+          });
+        },
+      );
 
-      gsap.utils
-        .toArray<HTMLElement>(".taste-reveal-image")
-        .forEach((image) => {
-          gsap
-            .timeline({
-              scrollTrigger: {
-                trigger: image,
-                start: "top 92%",
-                end: "bottom 8%",
-                scrub: 0.7,
-              },
-            })
-            .fromTo(
-              image,
-              { scale: 0.82, opacity: 0.42 },
-              { scale: 1, opacity: 1, ease: "none", duration: 0.55 },
-            )
-            .to(image, {
-              scale: 1.055,
-              opacity: 0.2,
-              ease: "none",
-              duration: 0.45,
-            });
-        });
+      media.add("(prefers-reduced-motion: no-preference)", () => {
+        gsap.utils
+          .toArray<HTMLElement>(".taste-reveal-image")
+          .forEach((image) => {
+            gsap
+              .timeline({
+                scrollTrigger: {
+                  trigger: image,
+                  start: "top 92%",
+                  end: "bottom 8%",
+                  scrub: 0.7,
+                },
+              })
+              .fromTo(
+                image,
+                { scale: 0.82, opacity: 0.42 },
+                { scale: 1, opacity: 1, ease: "none", duration: 0.55 },
+              )
+              .to(image, {
+                scale: 1.055,
+                opacity: 0.2,
+                ease: "none",
+                duration: 0.45,
+              });
+          });
+      });
 
       return () => media.revert();
     },

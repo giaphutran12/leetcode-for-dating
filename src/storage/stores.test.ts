@@ -11,6 +11,7 @@ import {
 import {
   createMemoryStorageLike,
   getStorageArea,
+  resetStorageAreaForTests,
   StorageBackend,
   type StorageLike,
 } from "./storageArea";
@@ -237,8 +238,38 @@ describe("demote — migrates sibling records into the memory fallback", () => {
   });
 });
 
+describe("getStorageArea — shared memory fallback across backends", () => {
+  afterEach(() => {
+    resetStorageAreaForTests();
+    vi.unstubAllGlobals();
+  });
+
+  it("two independently-created backends share one fallback when storage is unavailable", () => {
+    // No localStorage: both probes resolve to the SAME module-scope memory area,
+    // mirroring two mounted views each building their own StorageBackend. XP one
+    // view persists must be readable by the other, not trapped in a private map.
+    vi.stubGlobal("localStorage", undefined);
+    resetStorageAreaForTests();
+
+    const backendA = new StorageBackend(getStorageArea());
+    const backendB = new StorageBackend(getStorageArea());
+    expect(backendA.persistent).toBe(false);
+    expect(backendB.persistent).toBe(false);
+
+    const storeA = createProgressStore(backendA);
+    const storeB = createProgressStore(backendB);
+
+    const value: Progress = { ...defaultProgress(), publicXP: 77 };
+    storeA.save(value);
+    // Backend B, created independently (as a second hook instance would), reads
+    // the XP A persisted — the fallback is shared, not per-instance.
+    expect(storeB.load()).toEqual(value);
+  });
+});
+
 describe("getStorageArea — availability fallback", () => {
   afterEach(() => {
+    resetStorageAreaForTests();
     vi.unstubAllGlobals();
   });
 

@@ -33,18 +33,37 @@ export interface StorageProbe {
 
 const PROBE_KEY = "rizzcode.v1.__probe__";
 
+// One in-memory fallback area shared across every getStorageArea() call in a page
+// session. Each mounted view's hook builds its own StorageBackend, so a fresh Map
+// per call would give every view a private, empty memory area — XP earned on the
+// Result view would vanish the moment the curriculum view read from its own map.
+// Sharing a single module-scope area makes the fallback behave like the one
+// localStorage it stands in for: everyone reads and writes the same data.
+let sharedMemoryArea: StorageLike | null = null;
+
+function sharedMemoryFallback(): StorageProbe {
+  sharedMemoryArea ??= createMemoryStorageLike();
+  return { area: sharedMemoryArea, persistent: false };
+}
+
+// Test-only: drop the shared fallback so suites that exercise the
+// unavailable-storage path don't leak in-memory state into one another.
+export function resetStorageAreaForTests(): void {
+  sharedMemoryArea = null;
+}
+
 // Probe localStorage by writing and removing a throwaway key. Any failure (no
-// localStorage, disabled cookies, private mode, quota) falls back to a fresh
+// localStorage, disabled cookies, private mode, quota) falls back to the shared
 // in-memory area flagged persistent:false so the UI can warn without blocking.
 export function getStorageArea(): StorageProbe {
   try {
     const ls = (globalThis as { localStorage?: StorageLike }).localStorage;
-    if (!ls) return { area: createMemoryStorageLike(), persistent: false };
+    if (!ls) return sharedMemoryFallback();
     ls.setItem(PROBE_KEY, "1");
     ls.removeItem(PROBE_KEY);
     return { area: ls, persistent: true };
   } catch {
-    return { area: createMemoryStorageLike(), persistent: false };
+    return sharedMemoryFallback();
   }
 }
 

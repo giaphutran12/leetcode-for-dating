@@ -10,6 +10,7 @@ import {
   makeJudgeResult,
   okJudge,
   scriptedEngine,
+  unretryableThenOkJudge,
 } from "../../test/fakeJudge";
 import type { UseProgressResult } from "../../hooks/useProgress";
 
@@ -119,6 +120,32 @@ describe("ScenarioSession — full loop", () => {
     await user.click(screen.getByRole("button", { name: "Retry judgment" }));
     expect(await screen.findByText("ATE")).toBeInTheDocument();
     expect(recordResult).toHaveBeenCalledTimes(1);
+  });
+
+  it("still offers Retry judgment on a NON-retryable judge error, and the retry can succeed", async () => {
+    const user = userEvent.setup();
+    // judge_unconfigured is flagged retryable:false, but config can change
+    // between attempts — the UI must still let the user retry (plan decision 24).
+    renderSession(
+      sceneScenario,
+      makeProgressApi(),
+      unretryableThenOkJudge(makeJudgeResult(), 1),
+    );
+    await begin(user);
+
+    await turn(user, "What would you say?", "what are you reading?");
+    await turn(user, "What would you say?", "nice, a slow burn");
+    await turn(user, "What would you say?", "which bus is yours?");
+
+    // Non-retryable failure: Retry judgment is offered anyway, transcript intact.
+    expect(
+      await screen.findByRole("button", { name: "Retry judgment" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("what are you reading?")).toBeInTheDocument();
+
+    // Retrying re-invokes the judge and succeeds → the result renders.
+    await user.click(screen.getByRole("button", { name: "Retry judgment" }));
+    expect(await screen.findByText("ATE")).toBeInTheDocument();
   });
 });
 

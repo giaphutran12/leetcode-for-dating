@@ -701,7 +701,10 @@ export const scenarios: Scenario[] = [
         "the party",
         "running joke",
       ],
-      lowInterestSignals: ["haha", "lol", "nice", "yeah", "cool"],
+      // Multi-word dry replies only: a bare "haha"/"lol"/"nice" also appears
+      // inside genuinely warm, playful messages, and low-interest is checked
+      // before positive, so single-word interjections would wrongly cool Dana.
+      lowInterestSignals: ["haha nice", "lol ok", "haha yeah", "ok cool", "lol yeah"],
       boundarySignals: [
         "you have to laugh",
         "that's not funny stop",
@@ -906,7 +909,10 @@ export const scenarios: Scenario[] = [
         "moving on",
         "fair",
       ],
-      lowInterestSignals: ["lol", "haha", "its fine", "ok", "yeah"],
+      // Multi-word dry replies only: a bare "lol"/"haha"/"ok" also lands inside
+      // warm messages that acknowledge the flat joke, and low-interest is checked
+      // before positive, so single-word interjections would wrongly cool Leah.
+      lowInterestSignals: ["haha its fine", "lol ok", "its fine", "ok whatever", "haha yeah"],
       boundarySignals: [
         "you have to forgive me",
         "don't be mad",

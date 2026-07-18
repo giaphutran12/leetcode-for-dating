@@ -22,7 +22,7 @@ const MAX_LENGTH = 420;
 // behavior" — preserve the transcript, award no XP, offer Retry judgment).
 const JUDGE_ERROR_COPY: Record<string, string> = {
   judge_unconfigured:
-    "The judge isn’t wired up in this environment yet. Your transcript is safe — retry once it’s configured.",
+    "The judge isn’t wired up in this environment yet. Your transcript is safe — retry, and if it’s since been configured it’ll go through.",
   judge_timeout:
     "The judge took too long to call it. Your transcript is right here — give it another shot.",
   judge_rate_limited:
@@ -148,15 +148,19 @@ export function PracticeView({ scenario, session }: PracticeViewProps) {
               Your transcript is untouched. No score, no XP lost.
             </p>
             <div className="taste-judge-error__actions">
-              {session.judgeError.retryable ? (
-                <button
-                  type="button"
-                  className="taste-button taste-button--lime"
-                  onClick={session.retryJudgment}
-                >
-                  Retry judgment
-                </button>
-              ) : null}
+              {/* Every judge failure preserves the transcript and offers Retry
+                  judgment — including judge_unconfigured and auth failures, since
+                  config can change between attempts (plan decision 24). The API's
+                  `retryable` flag describes transience, not whether the user may
+                  try again; the button is always available, with "Practice again"
+                  as an alternate reset rather than the only path. */}
+              <button
+                type="button"
+                className="taste-button taste-button--lime"
+                onClick={session.retryJudgment}
+              >
+                Retry judgment
+              </button>
               <button
                 type="button"
                 className="taste-button taste-button--ghost"

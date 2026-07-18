@@ -41,6 +41,7 @@ import { scenarioById } from "../data/scenarios";
 import type { JudgeApiResponse, JudgeRequest } from "../domain/types";
 import type { ConversationEngine } from "../engine/conversationEngine";
 import type { JudgeFn } from "../hooks/usePracticeSession";
+import { resetSharedStoresForTests } from "../hooks/useProgress";
 import { handleJudgeRequest } from "../server/judge/route";
 import type { CallJudgeModel } from "../server/judge/provider";
 import { mockCallModel } from "../server/judge/mockModel";
@@ -76,6 +77,10 @@ beforeEach(() => {
     configurable: true,
     writable: true,
   });
+  // The production useProgress path shares one module-scope backend across a page
+  // session; drop it so each test binds to the fresh localStorage above instead
+  // of the first test's storage.
+  resetSharedStoresForTests();
 });
 
 afterEach(() => {

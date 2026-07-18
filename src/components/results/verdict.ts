@@ -5,11 +5,10 @@
 
 import type { Verdict } from "../../domain/types";
 
-export function verdictFor(score: number): Verdict {
-  if (score >= 8) return "ATE";
-  if (score >= 4) return "COOKED";
-  return "FUMBLED";
-}
+// The band thresholds are owned by the domain scoring module — re-export the one
+// implementation so the UI can't drift from it. (Only the band *copy* below is
+// UI-local.)
+export { verdictFor } from "../../domain/scoring";
 
 const BAND_COPY: Record<Verdict, string[]> = {
   ATE: [

@@ -78,6 +78,38 @@ interface Stores {
   attempts: AttemptStore;
 }
 
+function createStores(probe: StorageProbe): Stores {
+  const backend = new StorageBackend(probe);
+  return {
+    backend,
+    profile: createProfileStore(backend),
+    progress: createProgressStore(backend),
+    milestones: createMilestoneStore(backend),
+    attempts: createAttemptStore(backend),
+  };
+}
+
+// One backend shared by every production hook instance. Each mounted view runs
+// its own useProgress, so without this a mid-session quota demote in one view
+// would leave the other views writing to a stale (still-full or diverged) area —
+// and a from-the-start memory fallback would give each view its own empty map.
+// A single shared backend keeps the whole page coherent: one area, one demote,
+// one `persistent` flag. Tests inject their own StorageProbe and get an isolated
+// backend per hook.
+let sharedStores: Stores | null = null;
+
+function getSharedStores(): Stores {
+  sharedStores ??= createStores(getStorageArea());
+  return sharedStores;
+}
+
+// Test-only: drop the shared production backend so suites that swap the global
+// localStorage between tests get a fresh backend instead of one pinned to the
+// first test's storage.
+export function resetSharedStoresForTests(): void {
+  sharedStores = null;
+}
+
 interface Snapshot {
   profile: UserProfile;
   progress: Progress;
@@ -114,17 +146,14 @@ export function useProgress(options: UseProgressOptions = {}): UseProgressResult
   optionsRef.current = options;
 
   // Stores are created once and share a single backend so a quota demote flips
-  // one coherent `persistent` flag.
+  // one coherent `persistent` flag. Injected storage gets an isolated backend
+  // (tests); the production path reuses one module-scope backend across every
+  // mounted view's hook so the memory fallback and any demote stay shared.
   const storesRef = useRef<Stores | null>(null);
   if (storesRef.current === null) {
-    const backend = new StorageBackend(options.storage ?? getStorageArea());
-    storesRef.current = {
-      backend,
-      profile: createProfileStore(backend),
-      progress: createProgressStore(backend),
-      milestones: createMilestoneStore(backend),
-      attempts: createAttemptStore(backend),
-    };
+    storesRef.current = options.storage
+      ? createStores(options.storage)
+      : getSharedStores();
   }
   const stores = storesRef.current;
 

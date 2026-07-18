@@ -121,8 +121,12 @@ export function usePracticeSession(
 
   // All mutable session state lives in a ref so async resolutions can read the
   // current attempt id synchronously and reject stale updates. A reducer bump
-  // drives React re-renders.
-  const stateRef = useRef<SessionState>(createSession(options.scenario));
+  // drives React re-renders. Lazily initialized so createSession runs once, not
+  // on every render (its result was discarded on all renders after the first).
+  const stateRef = useRef<SessionState | null>(null);
+  if (stateRef.current === null) {
+    stateRef.current = createSession(options.scenario);
+  }
   const [, forceRender] = useReducer((n: number) => n + 1, 0);
 
   const commit = useCallback(
@@ -144,7 +148,7 @@ export function usePracticeSession(
   const startJudging = useCallback(
     (attemptId: string) => {
       const judge = optionsRef.current.judge ?? defaultJudge;
-      const current = stateRef.current;
+      const current = stateRef.current!;
       if (current.attempt.id !== attemptId) return;
 
       const request: JudgeRequest = {
@@ -164,7 +168,7 @@ export function usePracticeSession(
 
       judge(request)
         .then((response) => {
-          const state = stateRef.current;
+          const state = stateRef.current!;
           if (state.attempt.id !== attemptId) return;
           if (response.ok) {
             commit({
@@ -194,7 +198,7 @@ export function usePracticeSession(
           }
         })
         .catch(() => {
-          const state = stateRef.current;
+          const state = stateRef.current!;
           if (state.attempt.id !== attemptId) return;
           commit({
             ...state,
@@ -214,7 +218,7 @@ export function usePracticeSession(
 
   const applyPersonaReply = useCallback(
     (attemptId: string, turn: 1 | 2 | 3, reply: PersonaReply) => {
-      const state = stateRef.current;
+      const state = stateRef.current!;
       // Stale reply from a reset attempt — drop it.
       if (state.attempt.id !== attemptId) return;
 
@@ -251,7 +255,7 @@ export function usePracticeSession(
   );
 
   const submitResponse = useCallback((body: string): boolean => {
-    const state = stateRef.current;
+    const state = stateRef.current!;
     const trimmed = body.trim();
 
     // Validation and state guards — none advance the turn.
@@ -313,7 +317,7 @@ export function usePracticeSession(
   }, [commit]);
 
   const retryJudgment = useCallback(() => {
-    const state = stateRef.current;
+    const state = stateRef.current!;
     // Only re-judge from a judge-error state; a completed attempt cannot be
     // re-judged, and re-sending uses the same immutable responses + attempt id.
     if (state.attempt.status !== "error") return;
@@ -321,7 +325,7 @@ export function usePracticeSession(
     startJudging(state.attempt.id);
   }, [startJudging]);
 
-  const state = stateRef.current;
+  const state = stateRef.current!;
   return {
     attempt: state.attempt,
     messages: state.attempt.messages,

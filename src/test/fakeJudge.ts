@@ -113,3 +113,29 @@ export function flakyJudge(result: JudgeResult, failures: number): JudgeFn {
     return Promise.resolve<JudgeApiResponse>({ ok: true, result });
   };
 }
+
+// A judge whose first `failures` responses are NON-retryable (e.g. an
+// unconfigured judge or an auth failure) then succeeds — config can change
+// between attempts, so the UI must still offer Retry judgment. Defaults to the
+// judge_unconfigured code.
+type JudgeErrorCode = Extract<JudgeApiResponse, { ok: false }>["code"];
+
+export function unretryableThenOkJudge(
+  result: JudgeResult,
+  failures = 1,
+  code: JudgeErrorCode = "judge_unconfigured",
+): JudgeFn {
+  let calls = 0;
+  return () => {
+    calls += 1;
+    if (calls <= failures) {
+      return Promise.resolve<JudgeApiResponse>({
+        ok: false,
+        retryable: false,
+        code,
+        message: "judge unavailable",
+      });
+    }
+    return Promise.resolve<JudgeApiResponse>({ ok: true, result });
+  };
+}
