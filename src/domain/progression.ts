@@ -85,7 +85,7 @@ function achievementsFor(
     achievements.push("Made Her Laugh");
   if (scenario.id === "connection-recover" && result.finalScore >= 7)
     achievements.push("Smooth Recovery");
-  if (scenario.id === "connection-callback" && result.finalScore >= 8)
+  if (scenario.id === "RC-023" && result.finalScore >= 8)
     achievements.push("Callback King");
   return achievements;
 }

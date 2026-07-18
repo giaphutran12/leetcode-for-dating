@@ -163,7 +163,7 @@ export function TasteExperience() {
           <article className="taste-bento__card taste-bento__card--scenario">
             <div className="taste-card-heading">
               <Target size={25} weight="duotone" />
-              <span>Ten playable situations</span>
+              <span>67 playable situations</span>
             </div>
             <div>
               <h3>Spark gets attention. Connection keeps it real.</h3>

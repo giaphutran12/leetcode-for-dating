@@ -15,7 +15,7 @@ describe("product view contracts", () => {
   beforeEach(() => window.localStorage.clear());
 
   it("shows a scene-only in-person scenario at 0 of 6 with the correct prompt", () => {
-    withProvider(<PracticeView scenario={getScenario("spark-bus-stop")!} />);
+    withProvider(<PracticeView scenario={getScenario("RC-001")!} />);
     fireEvent.click(screen.getByRole("button", { name: /start conversation/i }));
     expect(screen.getByText("0 / 6")).toBeInTheDocument();
     expect(screen.getByLabelText("What would you say?")).toBeInTheDocument();
@@ -24,11 +24,11 @@ describe("product view contracts", () => {
 
   it("shows the incoming message and messaging-specific prompt", () => {
     withProvider(
-      <PracticeView scenario={getScenario("connection-keep-thread")!} />,
+      <PracticeView scenario={getScenario("RC-035")!} />,
     );
     fireEvent.click(screen.getByRole("button", { name: /start conversation/i }));
     expect(
-      screen.getByText(/second bánh xèo was edible/i),
+      screen.getByText(/commute took ninety minutes/i),
     ).toBeInTheDocument();
     expect(screen.getByLabelText("What would you text?")).toBeInTheDocument();
   });
@@ -49,11 +49,11 @@ describe("product view contracts", () => {
     expect(screen.getByText(/not a real global rank/i)).toBeInTheDocument();
   });
 
-  it("keeps all ten practice scenarios available from day one", () => {
+  it("keeps all 67 practice scenarios available from day one", () => {
     withProvider(<CurriculumView />);
     expect(screen.queryByText("Locked")).not.toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: /enter scenario/i })).toHaveLength(
-      10,
+      67,
     );
   });
 });

@@ -13,5 +13,5 @@
     "types": ["node"],
     "tsBuildInfoFile": "./node_modules/.cache/tsconfig.server.tsbuildinfo"
   },
-  "include": ["server", "src/domain", "src/data/scenarios.ts", "src/engine"]
+  "include": ["server", "src/domain", "src/data/scenarios.ts", "src/data/scenarios", "src/engine"]
 }

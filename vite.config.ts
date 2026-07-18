@@ -6,5 +6,8 @@ export default defineConfig({
   server: {
     host: "127.0.0.1",
     port: 4173,
+    hmr: process.env.VITE_HMR_PORT
+      ? { port: Number(process.env.VITE_HMR_PORT) }
+      : undefined,
   },
 });

@@ -65,6 +65,13 @@ function fixtureScore(
   if (id === "respect_calibration") {
     return hardGate.triggered ? 0 : 2;
   }
+  if (
+    scenario.fallback.exitSignals.some((signal) =>
+      matchesSignal(body, signal),
+    )
+  ) {
+    return 2;
+  }
   return scenario.successSignals.some((signal) => matchesSignal(body, signal))
     ? 2
     : 1;

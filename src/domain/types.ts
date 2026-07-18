@@ -17,13 +17,18 @@ export type CriterionId =
 export type OutcomeCode =
   | "conversation_continues"
   | "shared_interest"
+  | "mutual_enjoyment"
   | "contact_exchanged"
   | "date_invited"
   | "date_agreed"
   | "graceful_exit"
   | "low_interest"
   | "incompatible"
-  | "boundary_crossed";
+  | "boundary_respected"
+  | "boundary_crossed"
+  | "repair_successful"
+  | "support_offered"
+  | "logistics_resolved";
 
 export interface PersonaState {
   engagement: Engagement;
@@ -48,6 +53,7 @@ export interface ScenarioFallbackGraph {
 }
 
 export interface Scenario {
+  problemNumber: number;
   id: string;
   module: ModuleId;
   mode: ScenarioMode;
@@ -59,6 +65,7 @@ export interface Scenario {
   visibleContext: string[];
   boundaries: string[];
   skills: string[];
+  tips: string[];
   opening:
     | { kind: "scene_only" }
     | { kind: "persona_message"; body: string };

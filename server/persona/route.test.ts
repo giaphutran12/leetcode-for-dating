@@ -57,7 +57,7 @@ describe("persona provider selection", () => {
         body: {
           schemaVersion: "1.0",
           attemptId: "attempt-route-prepare",
-          scenarioId: "connection-keep-thread",
+          scenarioId: "RC-035",
           turn: 1,
           body: "What happened next?",
         },

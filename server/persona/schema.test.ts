@@ -51,7 +51,7 @@ describe("persona schemas", () => {
       PersonaRequestSchema.safeParse({
         schemaVersion: "1.0",
         attemptId: "attempt-123",
-        scenarioId: "spark-bus-stop",
+        scenarioId: "RC-001",
         turn: 7,
         body: "hello",
       }).success,
@@ -60,7 +60,7 @@ describe("persona schemas", () => {
       PersonaRequestSchema.safeParse({
         schemaVersion: "1.0",
         attemptId: "attempt-123",
-        scenarioId: "spark-bus-stop",
+        scenarioId: "RC-001",
         turn: 1,
         body: "a".repeat(421),
       }).success,

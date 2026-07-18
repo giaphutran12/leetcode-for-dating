@@ -558,6 +558,24 @@
   text-transform: uppercase;
 }
 
+.rizz-scenario-card__skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rizz-scenario-card__skills li {
+  padding: 5px 8px;
+  border: 1px solid rgba(21, 20, 17, 0.35);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .rizz-scenario-card .rizz-badges {
   margin-top: 30px;
 }
@@ -1086,10 +1104,14 @@
 }
 
 .rizz-score-disc {
-  display: grid;
-  width: clamp(170px, 20vw, 280px);
+  display: flex;
+  width: clamp(210px, 22vw, 320px);
   aspect-ratio: 1;
-  place-content: center;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(16px, 2vw, 24px);
+  padding: 24px;
   border: 2px solid currentColor;
   border-radius: 50%;
   text-align: center;
@@ -1098,14 +1120,14 @@
 .rizz-score-disc strong {
   font-family: "Playfair Display", Georgia, serif;
   font-size: clamp(70px, 10vw, 130px);
-  line-height: 0.8;
+  line-height: 0.72;
 }
 
 .rizz-score-disc span {
-  margin-top: 14px;
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.1em;
+  line-height: 1.2;
   text-transform: uppercase;
 }
 
@@ -1672,7 +1694,7 @@
   }
 
   .rizz-score-disc {
-    width: 190px;
+    width: 210px;
   }
 
   .rizz-progress-hero {

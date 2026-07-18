@@ -10,9 +10,9 @@ import {
 } from "./conversationEngine";
 
 describe("canonical scenario catalog", () => {
-  it("contains exactly ten fully playable scenarios across both modes", () => {
-    expect(scenarios).toHaveLength(10);
-    expect(new Set(scenarios.map((scenario) => scenario.id)).size).toBe(10);
+  it("contains exactly 67 fully playable scenarios across both modes", () => {
+    expect(scenarios).toHaveLength(67);
+    expect(new Set(scenarios.map((scenario) => scenario.id)).size).toBe(67);
     expect(scenarios.some((scenario) => scenario.mode === "in_person")).toBe(
       true,
     );
@@ -28,7 +28,7 @@ describe("canonical scenario catalog", () => {
 });
 
 describe("conversation state engine", () => {
-  const scenario = getScenario("spark-bus-stop")!;
+  const scenario = getScenario("RC-001")!;
 
   it("starts a scene-only scenario at zero with no invented persona message", () => {
     const attempt = createAttempt(scenario, "attempt-scene");

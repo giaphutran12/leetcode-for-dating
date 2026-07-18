@@ -24,7 +24,7 @@ function request(
 }
 
 describe("adaptive persona service", () => {
-  it("generates a causally different playable first turn for all ten scenarios", async () => {
+  it("generates a causally different playable first turn for all 67 scenarios", async () => {
     for (const scenario of scenarios) {
       const service = new PersonaService(
         new PersonaConversationStore(),
@@ -49,7 +49,7 @@ describe("adaptive persona service", () => {
     );
     const firstRequest = request(
       "attempt-idempotent",
-      "spark-bus-stop",
+      "RC-001",
     );
     const [first, duplicate] = await Promise.all([
       service.respond(firstRequest),
@@ -82,10 +82,10 @@ describe("adaptive persona service", () => {
       fixturePersonaProvider,
     );
     const first = service.respond(
-      request("attempt-cross-scenario", "spark-bus-stop"),
+      request("attempt-cross-scenario", "RC-001"),
     );
     const conflicting = await service.respond(
-      request("attempt-cross-scenario", "connection-keep-thread"),
+      request("attempt-cross-scenario", "RC-035"),
     );
     expect((await first).ok).toBe(true);
     expect(conflicting).toMatchObject({
@@ -105,7 +105,7 @@ describe("adaptive persona service", () => {
       failingProvider,
     );
     const result = await service.respond(
-      request("attempt-fallback", "spark-bus-stop"),
+      request("attempt-fallback", "RC-001"),
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -130,7 +130,7 @@ describe("adaptive persona service", () => {
       reactionOnlyProvider,
     );
     const result = await service.respond(
-      request("attempt-reaction-only", "spark-bus-stop"),
+      request("attempt-reaction-only", "RC-001"),
     );
     expect(result).toMatchObject({ ok: true, usedFallback: true });
   });
@@ -145,7 +145,7 @@ describe("adaptive persona service", () => {
     };
     const store = new PersonaConversationStore();
     const service = new PersonaService(store, provider);
-    const draft = request("attempt-prepared", "connection-keep-thread");
+    const draft = request("attempt-prepared", "RC-035");
 
     const prepared = await service.prepare(draft);
     expect(prepared.ok).toBe(true);
@@ -173,7 +173,7 @@ describe("adaptive persona service", () => {
     const service = new PersonaService(store, provider);
     const original = request(
       "attempt-edited-draft",
-      "connection-keep-thread",
+      "RC-035",
       1,
       "first draft",
     );
@@ -206,7 +206,7 @@ describe("adaptive persona service", () => {
     );
     const base = request(
       "attempt-preparation-cap",
-      "connection-keep-thread",
+      "RC-035",
     );
     for (const body of ["draft one", "draft two", "draft three"]) {
       expect((await service.prepare({ ...base, body })).ok).toBe(true);
@@ -239,7 +239,7 @@ describe("adaptive persona service", () => {
       eagerProvider,
     );
     const result = await service.respond(
-      request("attempt-eager", "spark-bus-stop"),
+      request("attempt-eager", "RC-001"),
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -255,7 +255,7 @@ describe("adaptive persona service", () => {
       const result = await service.respond(
         request(
           "attempt-six-turns",
-          "spark-bus-stop",
+          "RC-001",
           turn,
           turn === 1 ? "shut up" : `turn ${turn}`,
         ),
@@ -267,7 +267,7 @@ describe("adaptive persona service", () => {
       }
     }
     expect(
-      store.getAttempt("attempt-six-turns", "spark-bus-stop")?.userTurn,
+      store.getAttempt("attempt-six-turns", "RC-001")?.userTurn,
     ).toBe(6);
   });
 
@@ -288,7 +288,7 @@ describe("adaptive persona service", () => {
     );
     for (const turn of [1, 2, 3, 4, 5, 6] as const) {
       const result = await service.respond(
-        request("attempt-final-boundary", "spark-bus-stop", turn),
+        request("attempt-final-boundary", "RC-001", turn),
       );
       expect(result.ok).toBe(true);
       if (result.ok && turn === 6) {

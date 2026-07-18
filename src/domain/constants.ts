@@ -19,13 +19,18 @@ export const CRITERION_LABELS: Record<CriterionId, string> = {
 export const OUTCOME_LABELS: Record<OutcomeCode, string> = {
   conversation_continues: "Comfortable continuation",
   shared_interest: "Shared interest",
+  mutual_enjoyment: "Mutual enjoyment",
   contact_exchanged: "Contact exchanged",
   date_invited: "Date invited",
   date_agreed: "Date agreed",
   graceful_exit: "Graceful exit",
   low_interest: "Low interest",
   incompatible: "Incompatibility clarified",
+  boundary_respected: "Boundary respected",
   boundary_crossed: "Boundary crossed",
+  repair_successful: "Repair successful",
+  support_offered: "Support offered",
+  logistics_resolved: "Logistics resolved",
 };
 
 export const MAX_RESPONSE_LENGTH = 420;

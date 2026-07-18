@@ -37,22 +37,22 @@ export function buildOnboardingPlan(
   const wantsReliability = /relationship|follow|ready|disappear/.test(combined);
   const flavor = answers.typeDescription.toLowerCase();
   const sparkPreference = /book|quiet|cafe|coffee|reader/.test(flavor)
-    ? "spark-cafe"
+    ? "RC-002"
     : /tech|build|developer|project|nerd/.test(flavor)
-      ? "spark-open-source"
+      ? "RC-004"
       : /social|outgoing|party|group/.test(flavor)
-        ? "spark-friend-group"
+        ? "RC-005"
         : undefined;
   const connectionPreference = /cook|food|vietnamese/.test(flavor)
-    ? "connection-keep-thread"
+    ? "RC-035"
     : /plant|playful|joke/.test(flavor)
-      ? "connection-callback"
+      ? "RC-023"
       : /date|plan|direct/.test(combined)
-        ? "connection-first-date"
+        ? "RC-040"
         : /awkward|repair|apolog/.test(combined)
-          ? "connection-recover"
+          ? "RC-044"
           : /reject|low interest|mismatch/.test(combined)
-            ? "connection-low-interest"
+            ? "RC-051"
             : undefined;
   const personalizedSparkIds = prioritize(sparkIds, sparkPreference);
   const personalizedConnectionIds = prioritize(

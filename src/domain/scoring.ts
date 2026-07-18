@@ -81,7 +81,7 @@ function hasExplicitRefusalBefore(attempt: Attempt, turn: number): boolean {
     (message) =>
       message.speaker === "her" &&
       message.turn < turn &&
-      /\b(no thanks|not interested|do not think i feel|please stop|give me space|do not want)\b/i.test(
+      /\b(no thanks|not interested|do not (?:think i )?feel|please stop|give me space|do not want|does not work for me)\b/i.test(
         message.body,
       ),
   );
@@ -234,9 +234,10 @@ function transcriptSupportsOutcome(
   const datePattern =
     /\b(coffee|dinner|lunch|date|join me|want to|saturday|thursday)\b/i;
 
-  if (!scenario.supportedOutcomeCodes.includes(code)) {
-    return false;
+  if (code === "boundary_crossed") {
+    return detectHardGates(attempt).triggered;
   }
+  if (!scenario.supportedOutcomeCodes.includes(code)) return false;
   if (code === "contact_exchanged") {
     return (
       attempt.personaState.engagement === "warm" &&
@@ -258,9 +259,6 @@ function transcriptSupportsOutcome(
     return scenario.fallback.exitSignals.some((signal) =>
       userText.toLowerCase().includes(signal.toLowerCase()),
     );
-  }
-  if (code === "boundary_crossed") {
-    return detectHardGates(attempt).triggered;
   }
   return true;
 }

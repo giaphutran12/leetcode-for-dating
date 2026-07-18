@@ -1,18 +1,21 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const port = process.env.PLAYWRIGHT_PORT ?? "4174";
+const baseURL = `http://127.0.0.1:${port}`;
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
   retries: 0,
   reporter: "list",
   use: {
-    baseURL: "http://127.0.0.1:4173",
+    baseURL,
     trace: "retain-on-failure",
   },
   webServer: {
     command:
-      "RIZZCODE_MOCK_PERSONA=1 RIZZCODE_MOCK_JUDGE=1 npm run dev",
-    url: "http://127.0.0.1:4173",
+      `PORT=${port} VITE_HMR_PORT=24679 RIZZCODE_MOCK_PERSONA=1 RIZZCODE_MOCK_JUDGE=1 npm run dev`,
+    url: baseURL,
     reuseExistingServer: false,
     timeout: 120_000,
   },

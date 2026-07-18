@@ -20,7 +20,7 @@ if (!process.env.OPENAI_API_KEY) {
 const request = {
   schemaVersion: "1.0" as const,
   attemptId: `live-smoke-${Date.now()}`,
-  scenarioId: "spark-bus-stop",
+  scenarioId: "RC-001",
   responses: [
     {
       turn: 1 as const,
