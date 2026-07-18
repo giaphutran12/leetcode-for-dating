@@ -1,7 +1,6 @@
 import type {
   Attempt,
   ConversationTurn,
-  Engagement,
   MessageDeliveryStatus,
   PersonaAction,
   PersonaReply,
@@ -13,8 +12,6 @@ import {
   MAX_CONVERSATION_TURNS,
   MAX_RESPONSE_LENGTH,
 } from "../domain/constants";
-
-const engagementOrder: Engagement[] = ["closed", "low", "neutral", "warm"];
 
 function normalize(value: string): string {
   return value
@@ -56,78 +53,6 @@ export function validateResponse(body: string):
   return { ok: true, body: trimmed };
 }
 
-function hasAnySignal(input: string, signals: string[]): boolean {
-  return signals.some((signal) => matchesSignal(input, signal));
-}
-
-function moveEngagement(
-  current: Engagement,
-  direction: "down" | "same" | "up",
-): Engagement {
-  const index = engagementOrder.indexOf(current);
-  if (direction === "up") {
-    return engagementOrder[Math.min(index + 1, engagementOrder.length - 1)];
-  }
-  if (direction === "down") {
-    return engagementOrder[Math.max(index - 1, 0)];
-  }
-  return current;
-}
-
-export function replyToUser(input: {
-  scenario: Scenario;
-  body: string;
-  turn: ConversationTurn;
-  personaState: PersonaState;
-}): PersonaReply {
-  const { scenario, body, turn, personaState } = input;
-  const { fallback } = scenario;
-
-  let interestChange: PersonaReply["interestChange"] = "same";
-  let boundary: PersonaState["boundary"] = personaState.boundary;
-  let terminalReason: PersonaReply["terminalReason"] = null;
-
-  if (hasAnySignal(body, fallback.boundarySignals)) {
-    interestChange = "down";
-    boundary = "explicit";
-    terminalReason = "boundary";
-  } else if (hasAnySignal(body, fallback.exitSignals)) {
-    terminalReason = "user_exit";
-  } else if (hasAnySignal(body, fallback.lowInterestSignals)) {
-    interestChange = "down";
-    boundary = boundary === "none" ? "soft" : boundary;
-  } else if (
-    hasAnySignal(body, [
-      ...fallback.positiveSignals,
-      ...scenario.successSignals,
-    ])
-  ) {
-    interestChange = "up";
-  }
-
-  const engagement = moveEngagement(
-    personaState.engagement,
-    interestChange,
-  );
-  const terminal =
-    terminalReason !== null || turn === MAX_CONVERSATION_TURNS;
-  const fallbackTurn = Math.min(turn, 3) as 1 | 2 | 3;
-  const reply = fallback.repliesByTurn[fallbackTurn][engagement];
-
-  return {
-    actions: [{ kind: "text", body: reply, delayMs: 180 }],
-    state: {
-      engagement,
-      boundary,
-      terminal,
-    },
-    interestChange,
-    terminalReason:
-      terminalReason ??
-      (turn === MAX_CONVERSATION_TURNS ? "completed" : null),
-  };
-}
-
 export function authoredFallbackReply(input: {
   scenario: Scenario;
   turn: ConversationTurn;
@@ -147,25 +72,6 @@ export function authoredFallbackReply(input: {
     terminalReason:
       turn === MAX_CONVERSATION_TURNS ? "completed" : null,
   };
-}
-
-export async function safePersonaReply(
-  input: {
-    scenario: Scenario;
-    body: string;
-    turn: ConversationTurn;
-    personaState: PersonaState;
-  },
-  engine: typeof replyToUser = replyToUser,
-): Promise<{ result: PersonaReply; usedFallback: boolean }> {
-  try {
-    return { result: engine(input), usedFallback: false };
-  } catch {
-    return {
-      result: authoredFallbackReply(input),
-      usedFallback: true,
-    };
-  }
 }
 
 function messageId(
@@ -346,27 +252,26 @@ export function applyPersonaReply(
   return finalizePersonaTurn(next, personaReply);
 }
 
-export function replayResponses(
+export function attemptFromResponses(
   scenario: Scenario,
   responses: Array<{ turn: ConversationTurn; body: string }>,
   attemptId: string,
 ): Attempt {
-  let attempt = createAttempt(scenario, attemptId, "server-replay");
-
-  for (const response of responses) {
+  return responses.reduce((attempt, response) => {
     if (response.turn !== attempt.userTurn + 1 || attempt.personaState.terminal) {
-      break;
+      return attempt;
     }
-    const reaction = replyToUser({
-      scenario,
-      body: response.body,
-      turn: response.turn,
-      personaState: attempt.personaState,
-    });
-    attempt = appendTurn(attempt, response.body, reaction, "server-replay");
-  }
-
-  return attempt;
+    return appendTurn(
+      attempt,
+      response.body,
+      authoredFallbackReply({
+        scenario,
+        turn: response.turn,
+        personaState: attempt.personaState,
+      }),
+      "test-fixture",
+    );
+  }, createAttempt(scenario, attemptId, "test-fixture"));
 }
 
 export function userResponses(attempt: Attempt) {

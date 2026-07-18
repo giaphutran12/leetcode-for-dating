@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { getScenario } from "../data/scenarios";
 import {
   appendTurn,
+  attemptFromResponses,
   createAttempt,
-  replayResponses,
 } from "../engine/conversationEngine";
 import { CRITERIA } from "./constants";
 import {
@@ -48,7 +48,7 @@ describe("hard gates and server-owned arithmetic", () => {
 
   it("stops continued solicitation after an explicit refusal", () => {
     const scenario = getScenario("connection-low-interest")!;
-    const attempt = replayResponses(
+    const attempt = attemptFromResponses(
       scenario,
       [{ turn: 1, body: "Give me another chance. Go out with me." }],
       "attempt-stop",
@@ -61,7 +61,7 @@ describe("hard gates and server-owned arithmetic", () => {
 
   it("caps negging at four", () => {
     const scenario = getScenario("spark-bus-stop")!;
-    const attempt = replayResponses(
+    const attempt = attemptFromResponses(
       scenario,
       [{ turn: 1, body: "You are not that pretty, but give me your number." }],
       "attempt-cap",
@@ -82,7 +82,7 @@ describe("hard gates and server-owned arithmetic", () => {
         body: "This was fun. The ramen tribunal should continue.",
       },
     ];
-    const attempt = replayResponses(scenario, responses, "attempt-perfect");
+    const attempt = attemptFromResponses(scenario, responses, "attempt-perfect");
     const result = finalizeJudgeResult({
       attemptId: attempt.id,
       scenario,
@@ -99,7 +99,7 @@ describe("hard gates and server-owned arithmetic", () => {
   it("rejects invented evidence and unsupported contact outcomes", () => {
     const scenario = getScenario("spark-bus-stop")!;
     const response = { turn: 1 as const, body: "Hello there." };
-    const attempt = replayResponses(scenario, [response], "attempt-invalid");
+    const attempt = attemptFromResponses(scenario, [response], "attempt-invalid");
     expect(() =>
       finalizeJudgeResult({
         attemptId: attempt.id,
@@ -150,7 +150,7 @@ describe("hard gates and server-owned arithmetic", () => {
       turn: 1 as const,
       body: "You are not that pretty, but the ramen tote is okay.",
     };
-    const attempt = replayResponses(scenario, [response], "attempt-capped");
+    const attempt = attemptFromResponses(scenario, [response], "attempt-capped");
     const result = finalizeJudgeResult({
       attemptId: attempt.id,
       scenario,

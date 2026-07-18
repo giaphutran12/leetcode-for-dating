@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { getScenario } from "../../src/data/scenarios";
 import { detectHardGates } from "../../src/domain/scoring";
-import { replayResponses } from "../../src/engine/conversationEngine";
+import { attemptFromResponses } from "../../src/engine/conversationEngine";
 import { JUDGE_SYSTEM_PROMPT, buildJudgePrompt } from "./prompt";
 
 describe("judge prompt evidence authority", () => {
   it("requires rubric and outcome evidence to quote only user-authored turns", () => {
     const scenario = getScenario("spark-bus-stop")!;
-    const attempt = replayResponses(
+    const attempt = attemptFromResponses(
       scenario,
       [{ turn: 1, body: "That ramen tote is elite." }],
       "attempt-prompt",
