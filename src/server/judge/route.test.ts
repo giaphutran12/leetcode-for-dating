@@ -92,6 +92,12 @@ describe("handleJudgeRequest — strict request rejection", () => {
     const { status } = await handleJudgeRequest(bad, deps);
     expect(status).toBe(400);
   });
+
+  it("rejects a whitespace-only body", async () => {
+    const bad = request({ responses: [{ turn: 1, body: "   " }] });
+    const { status } = await handleJudgeRequest(bad, deps);
+    expect(status).toBe(400);
+  });
 });
 
 describe("handleJudgeRequest — scenario and configuration", () => {
@@ -211,5 +217,53 @@ describe("handleJudgeRequest — transient failure and retry", () => {
     expect(status).toBe(502);
     if (body.ok) throw new Error("expected failure");
     expect(body.code).toBe("judge_unavailable");
+  });
+});
+
+describe("handleJudgeRequest — non-transient failures skip the retry", () => {
+  // The AI SDK sets `name` to this stable "AI_*" tag on the real
+  // NoObjectGeneratedError; a hand-built stand-in with the same name exercises
+  // the same classification path without importing the AI SDK into tests.
+  function noObjectGeneratedError(): Error {
+    return Object.assign(new Error("No object generated."), {
+      name: "AI_NoObjectGeneratedError",
+    });
+  }
+  function authError(status: number): Error {
+    return Object.assign(new Error("Incorrect API key provided: sk-***"), { statusCode: status });
+  }
+
+  it("classifies a NoObjectGeneratedError-style throw as judge_invalid_output and calls the model exactly once", async () => {
+    const callModel = vi.fn().mockRejectedValue(noObjectGeneratedError());
+    const deps: JudgeDeps = { env: KEY_ENV, callModel };
+    const { status, body } = await handleJudgeRequest(request(), deps);
+    expect(status).toBe(502);
+    if (body.ok) throw new Error("expected failure");
+    expect(body.code).toBe("judge_invalid_output");
+    expect(body.retryable).toBe(true);
+    expect(callModel).toHaveBeenCalledTimes(1);
+  });
+
+  it("classifies a 401 auth error as judge_unavailable, non-retryable, calls the model exactly once, and never echoes provider text", async () => {
+    const callModel = vi.fn().mockRejectedValue(authError(401));
+    const deps: JudgeDeps = { env: KEY_ENV, callModel };
+    const { status, body } = await handleJudgeRequest(request(), deps);
+    expect(status).toBe(502);
+    if (body.ok) throw new Error("expected failure");
+    expect(body.code).toBe("judge_unavailable");
+    expect(body.retryable).toBe(false);
+    expect(body.message).not.toMatch(/sk-|api key/i);
+    expect(callModel).toHaveBeenCalledTimes(1);
+  });
+
+  it("classifies a 403 auth error the same way", async () => {
+    const callModel = vi.fn().mockRejectedValue(authError(403));
+    const deps: JudgeDeps = { env: KEY_ENV, callModel };
+    const { status, body } = await handleJudgeRequest(request(), deps);
+    expect(status).toBe(502);
+    if (body.ok) throw new Error("expected failure");
+    expect(body.code).toBe("judge_unavailable");
+    expect(body.retryable).toBe(false);
+    expect(callModel).toHaveBeenCalledTimes(1);
   });
 });

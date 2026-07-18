@@ -40,9 +40,12 @@ const turnSchema = z.union([z.literal(1), z.literal(2), z.literal(3)]);
 const scoreSchema = z.union([z.literal(0), z.literal(1), z.literal(2)]);
 
 // A single user response. Strict: no extra keys, body non-empty and bounded.
+// `.trim()` runs first so min/max (and the length a client sees rejected) are
+// judged consistently against the trimmed value — a whitespace-only body is
+// empty, not a 1-character response.
 const ResponseSchema = z.strictObject({
   turn: turnSchema,
-  body: z.string().min(1).max(MAX_BODY_LENGTH),
+  body: z.string().trim().min(1).max(MAX_BODY_LENGTH),
 });
 
 export const JudgeRequestSchema = z

@@ -37,6 +37,11 @@ const baseRequest: JudgeRequest = {
 };
 
 describe.skipIf(!LIVE)("live judge smoke", () => {
+  // Populated by the first test, reused as the baseline for the "materially
+  // different" comparison in the second — keeps total live calls in this file
+  // at exactly 2 (one per test), run in order within the same describe block.
+  let firstResult: Extract<Awaited<ReturnType<typeof handleJudgeRequest>>["body"], { ok: true }>["result"] | undefined;
+
   it("returns a validated result whose verdict matches its finalScore", async () => {
     const { status, body } = await handleJudgeRequest(baseRequest, liveDeps());
     expect(status).toBe(200);
@@ -44,9 +49,12 @@ describe.skipIf(!LIVE)("live judge smoke", () => {
     expect(body.result.rubric).toHaveLength(5);
     expect(body.result.verdict).toBe(verdictFor(body.result.finalScore));
     expect(body.result.attemptId).toBe("live-smoke-1");
+    firstResult = body.result;
   }, 70_000);
 
   it("produces a materially different result for a materially different transcript", async () => {
+    if (!firstResult) throw new Error("expected the first live call to have run first");
+
     const weak: JudgeRequest = {
       ...baseRequest,
       attemptId: "live-smoke-2",
@@ -60,5 +68,12 @@ describe.skipIf(!LIVE)("live judge smoke", () => {
     if (!body.ok) throw new Error(`live judge failed: ${body.code}`);
     // Two different transcripts should not collapse to an identical judgment.
     expect(body.result.attemptId).toBe("live-smoke-2");
+    // Genuinely different judgments, not just a different attemptId echo: the
+    // rubric (scores/evidence/feedback) or the finalScore must differ from the
+    // strong-response baseline captured by the first test.
+    expect(
+      body.result.finalScore !== firstResult.finalScore ||
+        JSON.stringify(body.result.rubric) !== JSON.stringify(firstResult.rubric),
+    ).toBe(true);
   }, 70_000);
 });
