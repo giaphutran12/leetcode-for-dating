@@ -17,11 +17,15 @@ Score exactly these five criteria from 0 to 2:
 5. challenge_objective
 
 For every criterion, cite an exact, non-empty substring from one real user turn and
-explain why it supports the score. Reward fitting humor, warmth, and memorable
-personality. Do not force jokes in serious moments. A graceful exit can score highly
-when the interaction calls for it. A date invitation may be skilled even when declined.
-Treat contact exchange or date agreement as supported only when the transcript and
-persona state support it. Keep all prose concise, plain text, warm, direct, and useful.
+explain why it supports the score. Every outcome.basis entry must also cite an exact,
+non-empty substring from a user-authored "you" turn. Never cite a persona "her" turn,
+scenario prose, or a paraphrase as rubric evidence or outcome basis.
+
+Reward fitting humor, warmth, and memorable personality. Do not force jokes in serious
+moments. A graceful exit can score highly when the interaction calls for it. A date
+invitation may be skilled even when declined. Treat contact exchange or date agreement
+as supported only when the transcript and persona state support it. Keep all prose
+concise, plain text, warm, direct, and useful.
 `.trim();
 
 export function buildJudgePrompt(
@@ -63,6 +67,6 @@ export function buildJudgePrompt(
     "BEGIN_UNTRUSTED_JUDGE_DATA",
     JSON.stringify(payload, null, 2),
     "END_UNTRUSTED_JUDGE_DATA",
-    "Return one structured judgment. The server will verify every excerpt, outcome, score sum, cap, and verdict.",
+    'Return one structured judgment. Copy every rubric and outcome-basis excerpt only from a "you" message. The server will reject persona excerpts, paraphrases, unsupported outcomes, wrong score sums, caps, or verdicts.',
   ].join("\n");
 }
