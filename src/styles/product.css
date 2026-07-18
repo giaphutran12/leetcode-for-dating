@@ -558,6 +558,24 @@
   text-transform: uppercase;
 }
 
+.rizz-scenario-card__skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rizz-scenario-card__skills li {
+  padding: 5px 8px;
+  border: 1px solid rgba(21, 20, 17, 0.35);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .rizz-scenario-card .rizz-badges {
   margin-top: 30px;
 }

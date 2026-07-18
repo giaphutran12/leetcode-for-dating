@@ -36,7 +36,7 @@ describe("persona provider selection", () => {
         body: JSON.stringify({
           schemaVersion: "1.0",
           attemptId: "attempt-route-prepare",
-          scenarioId: "connection-keep-thread",
+          scenarioId: "RC-035",
           turn: 1,
           body: "What happened next?",
         }),
@@ -68,7 +68,7 @@ describe("persona provider selection", () => {
           body: JSON.stringify({
             schemaVersion: "1.0",
             attemptId,
-            scenarioId: "spark-bus-stop",
+            scenarioId: "RC-001",
             turn: index + 1,
             body,
             sessionToken,
@@ -98,7 +98,7 @@ describe("persona provider selection", () => {
           body: JSON.stringify({
             schemaVersion: "1.0",
             attemptId,
-            scenarioId: "spark-bus-stop",
+            scenarioId: "RC-001",
             responses: responses.map((body, index) => ({
               turn: index + 1,
               body,

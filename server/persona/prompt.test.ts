@@ -5,7 +5,7 @@ import { buildPersonaPrompt, PERSONA_SYSTEM_PROMPT } from "./prompt";
 
 describe("persona prompt", () => {
   it("treats prompt injection as dialogue data and does not expose lesson goals", () => {
-    const scenario = getScenario("spark-bus-stop")!;
+    const scenario = getScenario("RC-001")!;
     const prompt = buildPersonaPrompt(
       scenario,
       createAttempt(scenario, "attempt-prompt"),

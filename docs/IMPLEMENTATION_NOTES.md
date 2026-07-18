@@ -87,7 +87,7 @@ finalScore * 10 + difficultyBonus
 ```
 
 Only improvement beyond the prior scenario mastery value is added. The first
-valid completion adds ten XP. Stop-level results add zero XP. All ten scenarios
+valid completion adds ten XP. Stop-level results add zero XP. All 67 scenarios
 are intentionally available from the first visit; completion still powers
 progress, best scores, and the recommended next rep. Rewarded attempt IDs
 prevent duplicate XP when judgment is retried.
@@ -110,7 +110,7 @@ Neither secret is returned to or referenced by client code.
 
 ## Test boundary
 
-Vitest covers domain rules, all ten adaptive scenarios, persona preparation and
+Vitest covers domain rules, all 67 adaptive scenarios, persona preparation and
 idempotency, stale-draft rejection, preparation cost caps, delivery-state
 monotonicity, hard gates, exact evidence, server-owned arithmetic, outcome
 acceptance, XP anti-farming, open scenario access, corrupt storage, storage

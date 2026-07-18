@@ -133,7 +133,7 @@ The judge:
 
 Required automated coverage:
 
-1. All ten scenarios accept adaptive persona turns.
+1. All 67 scenarios accept adaptive persona turns.
 2. A direct user question produces an input-sensitive provider request and response.
 3. A normal attempt can end at turns three through six.
 4. A persona exit can end before turn three.
@@ -150,7 +150,7 @@ Required automated coverage:
 15. Five seconds of Messaging draft inactivity prepares without committing.
 16. Edited drafts cannot consume stale prepared replies.
 17. Sent, Delivered, and Seen states render on desktop, tablet, and mobile.
-18. All ten scenarios are available without completion gates.
+18. All 67 scenarios are available without completion gates.
 
 ## Deliberately not claimed
 

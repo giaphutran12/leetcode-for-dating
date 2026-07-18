@@ -6,7 +6,7 @@ import { JUDGE_SYSTEM_PROMPT, buildJudgePrompt } from "./prompt";
 
 describe("judge prompt evidence authority", () => {
   it("requires rubric and outcome evidence to quote only user-authored turns", () => {
-    const scenario = getScenario("spark-bus-stop")!;
+    const scenario = getScenario("RC-001")!;
     const attempt = attemptFromResponses(
       scenario,
       [{ turn: 1, body: "That ramen tote is elite." }],

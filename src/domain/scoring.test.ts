@@ -16,7 +16,7 @@ import type { JudgeModelDraft } from "./types";
 function perfectDraft(
   excerpt: string,
   turn: 1 | 2 | 3 = 3,
-  outcome: JudgeModelDraft["outcome"]["code"] = "shared_interest",
+  outcome: JudgeModelDraft["outcome"]["code"] = "conversation_continues",
 ): JudgeModelDraft {
   const evidence = { turn, excerpt, reason: "Exact observable evidence." };
   return {
@@ -47,7 +47,7 @@ describe("hard gates and server-owned arithmetic", () => {
   });
 
   it("stops continued solicitation after an explicit refusal", () => {
-    const scenario = getScenario("connection-low-interest")!;
+    const scenario = getScenario("RC-051")!;
     const attempt = attemptFromResponses(
       scenario,
       [{ turn: 1, body: "Give me another chance. Go out with me." }],
@@ -60,7 +60,7 @@ describe("hard gates and server-owned arithmetic", () => {
   });
 
   it("caps negging at four", () => {
-    const scenario = getScenario("spark-bus-stop")!;
+    const scenario = getScenario("RC-001")!;
     const attempt = attemptFromResponses(
       scenario,
       [{ turn: 1, body: "You are not that pretty, but give me your number." }],
@@ -73,7 +73,7 @@ describe("hard gates and server-owned arithmetic", () => {
   });
 
   it("recalculates score, cap, verdict, labels, and exact evidence", () => {
-    const scenario = getScenario("spark-bus-stop")!;
+    const scenario = getScenario("RC-001")!;
     const responses = [
       { turn: 1 as const, body: "That ramen tote is elite." },
       { turn: 2 as const, body: "Spicy miso wins. What is your answer?" },
@@ -92,12 +92,12 @@ describe("hard gates and server-owned arithmetic", () => {
     expect(result.rawScore).toBe(10);
     expect(result.finalScore).toBe(10);
     expect(result.verdict).toBe("ATE");
-    expect(result.outcome.label).toBe("Shared interest");
+    expect(result.outcome.label).toBe("Comfortable continuation");
     expect(result.rubric).toHaveLength(5);
   });
 
   it("rejects invented evidence and unsupported contact outcomes", () => {
-    const scenario = getScenario("spark-bus-stop")!;
+    const scenario = getScenario("RC-001")!;
     const response = { turn: 1 as const, body: "Hello there." };
     const attempt = attemptFromResponses(scenario, [response], "attempt-invalid");
     expect(() =>
@@ -120,7 +120,7 @@ describe("hard gates and server-owned arithmetic", () => {
   });
 
   it("does not claim contact exchange after the persona declines", () => {
-    const scenario = getScenario("spark-bus-stop")!;
+    const scenario = getScenario("RC-001")!;
     const body = "Want to swap numbers and continue this sometime?";
     const attempt = appendTurn(createAttempt(scenario, "attempt-declined"), body, {
       actions: [
@@ -145,7 +145,7 @@ describe("hard gates and server-owned arithmetic", () => {
   });
 
   it("applies a cap after model scoring rather than trusting model totals", () => {
-    const scenario = getScenario("spark-bus-stop")!;
+    const scenario = getScenario("RC-001")!;
     const response = {
       turn: 1 as const,
       body: "You are not that pretty, but the ramen tote is okay.",

@@ -237,6 +237,15 @@ export function PracticeView({ scenario }: { scenario: Scenario }) {
                 ))}
               </ul>
             </article>
+            <article>
+              <Sparkle size={24} weight="duotone" />
+              <h2>Tips for this rep</h2>
+              <ul>
+                {scenario.tips.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </article>
           </div>
           <button
             className="rizz-primary-button"

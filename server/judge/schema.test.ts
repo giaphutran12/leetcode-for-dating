@@ -6,7 +6,7 @@ describe("judge request boundary", () => {
     const parsed = JudgeRequestSchema.safeParse({
       schemaVersion: "1.0",
       attemptId: "attempt-authority",
-      scenarioId: "spark-bus-stop",
+      scenarioId: "RC-001",
       responses: [{ turn: 1, body: "Hello" }],
       score: 10,
       xp: 9999,
@@ -21,7 +21,7 @@ describe("judge request boundary", () => {
       JudgeRequestSchema.safeParse({
         schemaVersion: "1.0",
         attemptId: "attempt-turns",
-        scenarioId: "spark-bus-stop",
+        scenarioId: "RC-001",
         responses: [{ turn: 2, body: "Skipped turn one" }],
       }).success,
     ).toBe(false);
@@ -29,7 +29,7 @@ describe("judge request boundary", () => {
       JudgeRequestSchema.safeParse({
         schemaVersion: "1.0",
         attemptId: "attempt-long",
-        scenarioId: "spark-bus-stop",
+        scenarioId: "RC-001",
         responses: [{ turn: 1, body: "x".repeat(421) }],
       }).success,
     ).toBe(false);

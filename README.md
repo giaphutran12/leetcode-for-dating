@@ -9,8 +9,8 @@ the Taste visual direction.
 
 - Four-question onboarding, skip path, personalized starting module, two skill
   priorities, Growth Direction, and one optional Side Quest
-- Spark and Connection curriculum with all ten scenarios available immediately
-- Exactly ten playable In Person and Messaging scenarios
+- Spark and Connection curriculum with all 67 scenarios available immediately
+- Exactly 67 playable In Person and Messaging scenarios from the closed catalog
 - Three to six user-authored turns, with earlier persona or boundary exits
 - Server-side adaptive persona reactions using `gpt-5-nano` by default
 - Messaging draft preparation after five idle seconds, plus Sent, Delivered,
@@ -30,6 +30,21 @@ the Taste visual direction.
 
 The historical `/control` and `/compare` prototype routes remain available as
 visual references. They are not the production product path.
+
+## Combined Next.js and 67-problem build
+
+The `codex/rizzcode-nextjs-67` branch combines the shipped Next.js build with
+the closed catalog supplied in `RIZZCODE_67_PROBLEMS_GITHUB_SPEC (1).md`.
+`src/data/scenarios/catalog.ts` is an exact mechanical copy of that catalog. A
+small adapter makes all 67 canonical `RC-001` through `RC-067` problems
+available to the curriculum, briefing, adaptive persona, fallback, judge, and
+progress flow. The list shows the global problem number and tested skills, and
+the briefing shows the scenario-specific tips.
+
+This catalog integration does not claim to implement the supplied document's
+separate signed-session V2 API, per-turn coaching object, or seven server-only
+interaction-profile prompts. Those are a distinct runtime migration, not part
+of adding the closed catalog to the current product.
 
 ## Run locally
 

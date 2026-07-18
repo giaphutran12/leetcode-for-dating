@@ -8,7 +8,7 @@ import {
 
 describe("signed conversation receipts", () => {
   it("round-trips a canonical attempt and rejects tampering", () => {
-    const scenario = getScenario("spark-bus-stop");
+    const scenario = getScenario("RC-001");
     expect(scenario).toBeDefined();
     if (!scenario) return;
 

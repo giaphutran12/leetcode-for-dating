@@ -87,7 +87,7 @@ describe("XP, anti-farming, and open practice", () => {
   });
 
   it("does not let a stop-level attempt poison later mastery XP", () => {
-    const scenario = getScenario("spark-bus-stop")!;
+    const scenario = getScenario("RC-001")!;
     const stopped = applyJudgment({
       progress: defaultProgress,
       attempt: createAttempt(scenario, "attempt-stopped"),
@@ -111,7 +111,7 @@ describe("XP, anti-farming, and open practice", () => {
   });
 
   it("applies one reward per attempt id", () => {
-    const scenario = getScenario("spark-bus-stop")!;
+    const scenario = getScenario("RC-001")!;
     const attempt = createAttempt(scenario, "attempt-progress");
     const first = applyJudgment({
       progress: defaultProgress,
@@ -133,8 +133,8 @@ describe("XP, anti-farming, and open practice", () => {
   });
 
   it("recommends the first incomplete scenario without gating access", () => {
-    const first = getScenario("spark-bus-stop")!;
-    const second = getScenario("spark-open-source")!;
+    const first = getScenario("RC-001")!;
+    const second = getScenario("RC-004")!;
     const profile = {
       onboardingPlan: {
         orderedScenarioIds: [first.id, second.id],

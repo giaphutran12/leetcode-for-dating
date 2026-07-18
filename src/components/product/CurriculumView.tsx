@@ -65,7 +65,9 @@ export function CurriculumView({
         </div>
         <div>
           <span>Completed</span>
-          <strong>{progress.completedScenarioIds.length}/10</strong>
+          <strong>
+            {progress.completedScenarioIds.length}/{scenarios.length}
+          </strong>
         </div>
       </section>
 
@@ -89,7 +91,7 @@ export function CurriculumView({
               </strong>
             </header>
             <div className="rizz-scenario-grid">
-              {moduleScenarios.map((scenario, index) => {
+              {moduleScenarios.map((scenario) => {
                 const complete = progress.completedScenarioIds.includes(
                   scenario.id,
                 );
@@ -106,7 +108,9 @@ export function CurriculumView({
                     key={scenario.id}
                   >
                     <div className="rizz-scenario-card__top">
-                      <span>{String(index + 1).padStart(2, "0")}</span>
+                      <span>
+                        {String(scenario.problemNumber).padStart(2, "0")}
+                      </span>
                       {complete ? (
                         <CheckCircle size={20} weight="fill" />
                       ) : (
@@ -119,6 +123,14 @@ export function CurriculumView({
                     </div>
                     <h3>{scenario.title}</h3>
                     <p>{scenario.objective}</p>
+                    <ul
+                      className="rizz-scenario-card__skills"
+                      aria-label="Skills tested"
+                    >
+                      {scenario.skills.slice(0, 3).map((skill) => (
+                        <li key={skill}>{skill}</li>
+                      ))}
+                    </ul>
                     <div className="rizz-scenario-card__meta">
                       <span>
                         {best === undefined ? "No score yet" : `Best ${best}/10`}
