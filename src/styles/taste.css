@@ -2665,3 +2665,928 @@ a.taste-scenario-card:hover {
     width: 100%;
   }
 }
+
+/* ============================================================================
+   Task 6b — Onboarding, progress, leaderboard, and shared side-quest card.
+   Same Taste system: tokens only, minimal radius, editorial scale, oxblood/ink
+   fields with lime accents. Onboarding and its starting line ride the dark
+   practice stage; progress and leaderboard ride the warm parchment page like the
+   curriculum. The .taste-page focus-visible and reduced-motion rules above cover
+   everything here — no new animations are introduced.
+   ========================================================================= */
+
+/* --- Extra button + toggle chip primitives ------------------------------- */
+.taste-button--oxblood {
+  color: #fff8ed;
+  background: var(--oxblood);
+}
+
+.taste-button--oxblood:hover {
+  background: var(--oxblood-bright);
+}
+
+.taste-chip-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid rgba(255, 248, 237, 0.3);
+  border-radius: 2px;
+  color: #fff8ed;
+  background: rgba(255, 248, 237, 0.05);
+  font-size: 14px;
+  font-weight: 600;
+  transition:
+    color 200ms ease,
+    background 200ms ease,
+    border-color 200ms ease;
+}
+
+.taste-chip-toggle:hover {
+  border-color: var(--lime);
+}
+
+.taste-chip-toggle[aria-pressed="true"] {
+  color: var(--ink);
+  border-color: var(--lime);
+  background: var(--lime);
+}
+
+/* --- Onboarding (dark stage) --------------------------------------------- */
+.taste-onboard__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.taste-onboard__count {
+  color: var(--lime);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.taste-onboard__progress {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 clamp(30px, 5vw, 52px);
+  padding: 0;
+  list-style: none;
+}
+
+.taste-onboard__progress li {
+  height: 4px;
+  flex: 1;
+  background: rgba(255, 248, 237, 0.16);
+}
+
+.taste-onboard__progress li[data-active="true"] {
+  background: var(--lime);
+}
+
+.taste-onboard__step h1 {
+  margin: 0;
+  font-size: clamp(2.1rem, 5vw, 3.6rem);
+  font-weight: 500;
+  letter-spacing: -0.06em;
+  line-height: 0.98;
+  overflow-wrap: anywhere;
+}
+
+.taste-onboard__help {
+  max-width: 560px;
+  margin: 18px 0 0;
+  color: rgba(255, 248, 237, 0.72);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.taste-onboard__input,
+.taste-onboard__textarea {
+  width: 100%;
+  margin-top: 26px;
+  padding: 15px 16px;
+  border: 1px solid rgba(255, 248, 237, 0.3);
+  border-radius: 0;
+  color: #fff8ed;
+  background: rgba(255, 248, 237, 0.05);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.taste-onboard__textarea {
+  min-height: 118px;
+  resize: vertical;
+}
+
+.taste-onboard__input::placeholder,
+.taste-onboard__textarea::placeholder {
+  color: rgba(255, 248, 237, 0.4);
+}
+
+.taste-onboard__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 26px;
+}
+
+.taste-onboard__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-top: clamp(34px, 5vw, 54px);
+}
+
+.taste-onboard__skip {
+  min-height: 44px;
+  margin-left: auto;
+  padding: 0 8px;
+  color: rgba(255, 248, 237, 0.65);
+  background: transparent;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.taste-onboard__skip:hover {
+  color: var(--lime);
+}
+
+/* --- Onboarding result: your starting line (dark stage) ------------------ */
+.taste-startingline__title {
+  margin: 12px 0 0;
+  font-size: clamp(2.6rem, 6vw, 4.6rem);
+  font-weight: 500;
+  letter-spacing: -0.07em;
+  line-height: 0.94;
+}
+
+.taste-startingline__lede {
+  max-width: 580px;
+  margin: 18px 0 0;
+  color: rgba(255, 248, 237, 0.75);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.taste-startingline__module {
+  display: grid;
+  gap: 6px;
+  margin-top: clamp(30px, 4vw, 46px);
+  padding: 24px;
+  border: 1px solid rgba(197, 243, 95, 0.4);
+  background: rgba(197, 243, 95, 0.08);
+}
+
+.taste-startingline__tag {
+  color: var(--lime);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.taste-startingline__module strong {
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+}
+
+.taste-startingline__module p {
+  max-width: 620px;
+  margin: 6px 0 0;
+  color: rgba(255, 248, 237, 0.82);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.taste-startingline__block {
+  margin-top: clamp(30px, 4vw, 46px);
+}
+
+.taste-startingline__block h2 {
+  margin: 0 0 16px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 248, 237, 0.55);
+}
+
+.taste-startingline__priorities {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: priority;
+}
+
+.taste-startingline__priorities li {
+  display: flex;
+  gap: 14px;
+  align-items: baseline;
+  padding: 16px 18px;
+  border: 1px solid rgba(255, 248, 237, 0.18);
+  background: rgba(255, 248, 237, 0.04);
+  color: rgba(255, 248, 237, 0.9);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.taste-startingline__priorities li::before {
+  counter-increment: priority;
+  content: counter(priority);
+  color: var(--lime);
+  font-weight: 800;
+}
+
+.taste-startingline__growth-intro {
+  margin: -6px 0 16px;
+  color: rgba(255, 248, 237, 0.68);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.taste-startingline__growth-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.taste-startingline__growth {
+  display: grid;
+  gap: 8px;
+  padding: 22px;
+  border: 1px solid rgba(255, 248, 237, 0.2);
+  background: rgba(255, 248, 237, 0.04);
+}
+
+.taste-startingline__growth strong {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: var(--lime);
+}
+
+.taste-startingline__growth p {
+  margin: 0;
+  color: rgba(255, 248, 237, 0.82);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.taste-startingline__rep span {
+  color: var(--lime);
+  font-weight: 800;
+}
+
+.taste-startingline__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: clamp(34px, 5vw, 54px);
+}
+
+/* --- Shared side-quest card (self-contained ink card, any background) ----- */
+.taste-sidequest {
+  display: grid;
+  gap: 16px;
+  margin-top: clamp(30px, 4vw, 46px);
+  padding: clamp(22px, 3vw, 30px);
+  border: 1px solid rgba(255, 248, 237, 0.22);
+  background: #211f1a;
+  color: #fff8ed;
+}
+
+.taste-sidequest__eyebrow {
+  margin: 0;
+  color: var(--lime);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.taste-sidequest h3 {
+  margin: 0;
+  font-size: clamp(24px, 3.5vw, 32px);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+.taste-sidequest__why {
+  margin: 0;
+  color: rgba(255, 248, 237, 0.8);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.taste-sidequest__action {
+  display: grid;
+  gap: 6px;
+  padding: 16px 18px;
+  border-left: 3px solid var(--lime);
+  background: rgba(255, 248, 237, 0.05);
+}
+
+.taste-sidequest__action span {
+  color: var(--lime);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.taste-sidequest__action p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.taste-sidequest__handoff-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.taste-sidequest__handoff-head span {
+  color: rgba(255, 248, 237, 0.55);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.taste-sidequest__copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--lime);
+  border-radius: 2px;
+  color: var(--lime);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 800;
+  transition:
+    color 200ms ease,
+    background 200ms ease;
+}
+
+.taste-sidequest__copy:hover {
+  color: var(--ink);
+  background: var(--lime);
+}
+
+.taste-sidequest__handoff blockquote {
+  margin: 0;
+  padding: 16px 18px;
+  border: 1px solid rgba(255, 248, 237, 0.18);
+  background: rgba(0, 0, 0, 0.28);
+  color: rgba(255, 248, 237, 0.92);
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.taste-sidequest__copyfail {
+  margin: 8px 0 0;
+  color: var(--lime);
+  font-size: 12px;
+}
+
+.taste-sidequest__boundary {
+  margin: 0;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 248, 237, 0.14);
+  color: rgba(255, 248, 237, 0.62);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+/* --- Progress + leaderboard shared page frame (parchment) ---------------- */
+.taste-progress,
+.taste-leaderboard {
+  padding-bottom: clamp(80px, 12vw, 160px);
+}
+
+.taste-progress__head,
+.taste-leaderboard__head {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: clamp(52px, 7vw, 92px) clamp(20px, 4vw, 64px) clamp(24px, 3vw, 40px);
+}
+
+.taste-progress__head h1,
+.taste-leaderboard__head h1 {
+  max-width: 760px;
+  margin: 0;
+  font-size: clamp(2.6rem, 6vw, 5rem);
+  font-weight: 500;
+  letter-spacing: -0.07em;
+  line-height: 0.94;
+}
+
+.taste-progress__notice {
+  max-width: 620px;
+  margin: 24px 0 0;
+  padding: 13px 16px;
+  border-left: 3px solid var(--oxblood);
+  background: #ece0c8;
+  color: #4a463d;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.taste-leaderboard__note {
+  max-width: 620px;
+  margin: 20px 0 0;
+  color: #565044;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.taste-progress__section {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: clamp(36px, 5vw, 60px) clamp(20px, 4vw, 64px) 0;
+}
+
+.taste-progress__section > h2 {
+  margin: 0 0 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--ink);
+  font-size: clamp(1.7rem, 3.5vw, 2.6rem);
+  font-weight: 500;
+  letter-spacing: -0.05em;
+}
+
+.taste-progress__foot {
+  max-width: 1120px;
+  margin: clamp(40px, 6vw, 70px) auto 0;
+  padding: 0 clamp(20px, 4vw, 64px);
+  color: #565044;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* --- Progress: module cards ---------------------------------------------- */
+.taste-progress__modules {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.taste-module-card {
+  padding: 24px;
+  border: 1px solid var(--ink);
+  background: #f7efdf;
+}
+
+.taste-module-card__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.taste-module-card__head h3 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+.taste-module-card__head span {
+  color: var(--oxblood);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.taste-module-card__avg {
+  margin: 6px 0 18px;
+  color: #565044;
+  font-size: 13px;
+}
+
+.taste-module-card__list {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.taste-module-card__list a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+  transition: background 180ms ease;
+}
+
+.taste-module-card__list a:hover {
+  background: var(--parchment);
+}
+
+.taste-module-card__scenario {
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.taste-module-card__todo {
+  flex: none;
+  color: #8a8271;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* --- Progress: achievements ---------------------------------------------- */
+.taste-achievements {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.taste-achievement {
+  display: flex;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--ink);
+}
+
+.taste-achievement[data-state="unlocked"] {
+  background: #f7efdf;
+}
+
+.taste-achievement[data-state="locked"] {
+  border-color: var(--line);
+  background: transparent;
+}
+
+.taste-achievement__icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.taste-achievement[data-state="unlocked"] .taste-achievement__icon {
+  color: var(--ink);
+  background: var(--lime);
+}
+
+.taste-achievement[data-state="locked"] .taste-achievement__icon {
+  color: #8a8271;
+  background: #e7dcc6;
+}
+
+.taste-achievement__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.taste-achievement__head strong {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.taste-achievement[data-state="locked"] .taste-achievement__head strong {
+  color: #6f6857;
+}
+
+.taste-achievement__state {
+  flex: none;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.taste-achievement[data-state="unlocked"] .taste-achievement__state {
+  color: var(--oxblood);
+}
+
+.taste-achievement[data-state="locked"] .taste-achievement__state {
+  color: #8a8271;
+}
+
+.taste-achievement__body p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #565044;
+}
+
+.taste-achievement[data-state="locked"] .taste-achievement__body p {
+  color: #6f6857;
+}
+
+/* --- Progress: private milestones ---------------------------------------- */
+.taste-milestones__lede {
+  max-width: 640px;
+  margin: -8px 0 22px;
+  color: #4a463d;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.taste-milestones__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.taste-milestone-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 46px;
+  padding: 10px 18px;
+  border: 1px solid var(--ink);
+  border-radius: 2px;
+  color: var(--ink);
+  background: #f7efdf;
+  font-size: 14px;
+  font-weight: 700;
+  transition:
+    color 200ms ease,
+    background 200ms ease,
+    transform 200ms ease;
+}
+
+.taste-milestone-btn svg {
+  color: var(--oxblood);
+}
+
+.taste-milestone-btn:hover {
+  transform: translateY(-2px);
+  color: #fffaf0;
+  background: var(--ink);
+}
+
+.taste-milestone-btn:hover svg {
+  color: var(--lime);
+}
+
+.taste-milestones__confirm {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0 0;
+  padding: 14px 18px;
+  border-left: 3px solid var(--lime);
+  background: #ece0c8;
+  color: #33301f;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.taste-milestones__confirm svg {
+  flex: none;
+  color: var(--oxblood);
+}
+
+.taste-milestones__log {
+  display: grid;
+  gap: 2px;
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.taste-milestones__log li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.taste-milestones__log li span:first-child {
+  font-weight: 600;
+}
+
+.taste-milestones__when {
+  flex: none;
+  color: #8a8271;
+  font-size: 12px;
+}
+
+.taste-milestones__empty {
+  margin: 22px 0 0;
+  color: #6f6857;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* --- Progress: reset ------------------------------------------------------ */
+.taste-reset__trigger {
+  min-height: 46px;
+  padding: 0 18px;
+  border: 1px solid var(--oxblood);
+  border-radius: 2px;
+  color: var(--oxblood);
+  background: transparent;
+  font-size: 13px;
+  font-weight: 800;
+  transition:
+    color 200ms ease,
+    background 200ms ease;
+}
+
+.taste-reset__trigger:hover {
+  color: #fffaf0;
+  background: var(--oxblood);
+}
+
+.taste-reset__confirm {
+  display: grid;
+  gap: 16px;
+  max-width: 560px;
+  padding: 20px 22px;
+  border: 1px solid var(--oxblood);
+  background: #ece0c8;
+}
+
+.taste-reset__confirm p {
+  margin: 0;
+  color: #33301f;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.taste-reset__confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* --- Leaderboard ---------------------------------------------------------- */
+.taste-board {
+  display: grid;
+  gap: 10px;
+  max-width: 1120px;
+  margin: clamp(20px, 3vw, 34px) auto 0;
+  padding: 0 clamp(20px, 4vw, 64px);
+  list-style: none;
+}
+
+.taste-board__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  border: 1px solid var(--ink);
+  background: #f7efdf;
+}
+
+.taste-board__row[data-player] {
+  border-color: var(--oxblood);
+  background: #211f1a;
+  color: #fff8ed;
+  box-shadow: inset 4px 0 0 var(--lime);
+}
+
+.taste-board__rank {
+  min-width: 26px;
+  color: var(--oxblood);
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.taste-board__row[data-player] .taste-board__rank {
+  color: var(--lime);
+}
+
+.taste-board__name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.taste-board__you {
+  flex: none;
+  padding: 3px 8px;
+  border-radius: 2px;
+  color: var(--ink);
+  background: var(--lime);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.taste-board__level {
+  flex: none;
+  color: #6c6559;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.taste-board__row[data-player] .taste-board__level {
+  color: rgba(255, 248, 237, 0.6);
+}
+
+.taste-board__xp {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  flex: none;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.taste-board__xp small {
+  color: #8a8271;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.taste-board__row[data-player] .taste-board__xp {
+  color: var(--lime);
+}
+
+.taste-board__row[data-player] .taste-board__xp small {
+  color: rgba(255, 248, 237, 0.6);
+}
+
+/* --- 6b narrow-screen adjustments (375px: no horizontal overflow) -------- */
+@media (max-width: 620px) {
+  .taste-onboard__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .taste-onboard__actions .taste-button {
+    width: 100%;
+  }
+
+  .taste-onboard__skip {
+    margin-left: 0;
+    align-self: center;
+  }
+
+  .taste-startingline__actions .taste-button,
+  .taste-reset__confirm-actions .taste-button {
+    width: 100%;
+  }
+
+  .taste-board__row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    row-gap: 4px;
+  }
+
+  .taste-board__level {
+    grid-column: 2 / 4;
+    grid-row: 2;
+  }
+
+  .taste-board__xp {
+    grid-column: 3;
+    grid-row: 1;
+  }
+}

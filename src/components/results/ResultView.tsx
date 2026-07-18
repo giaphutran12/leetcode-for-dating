@@ -18,6 +18,9 @@ interface ResultViewProps {
   outcome: ApplyJudgeResultOutcome;
   level: number;
   nextScenarioId: string;
+  // When false, storage is unavailable and this run lives in memory only.
+  // Defaults true so existing render sites need no change.
+  persistent?: boolean;
   onRunItBack(): void;
 }
 
@@ -45,6 +48,7 @@ export function ResultView({
   outcome,
   level,
   nextScenarioId,
+  persistent = true,
   onRunItBack,
 }: ResultViewProps) {
   const verdict = result.verdict;
@@ -60,6 +64,13 @@ export function ResultView({
           </Link>
           <span className="taste-result__scenario">{scenario.title}</span>
         </div>
+
+        {!persistent ? (
+          <p className="taste-storage-note" role="status">
+            Heads up: your browser isn’t saving right now, so this score lives on
+            this device only. Everything still counts here.
+          </p>
+        ) : null}
 
         <section className="taste-result__score" aria-label="Your score">
           <div className="taste-result__score-num">

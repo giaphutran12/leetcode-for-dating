@@ -40,6 +40,23 @@ describe("App", () => {
     ).toBeInTheDocument();
   });
 
+  it("links the landing nav to practice, progress, and leaderboard", () => {
+    render(
+      <MemoryRouter initialEntries={["/"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    const hasHref = (name: RegExp | string, href: string) =>
+      screen
+        .getAllByRole("link", { name })
+        .some((link) => link.getAttribute("href") === href);
+
+    expect(hasHref("Practice", "/practice")).toBe(true);
+    expect(hasHref("Progress", "/progress")).toBe(true);
+    expect(hasHref("Leaderboard", "/leaderboard")).toBe(true);
+  });
+
   it("renders a real not-found state on an unknown route", () => {
     render(
       <MemoryRouter initialEntries={["/definitely-not-a-route"]}>

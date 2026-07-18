@@ -23,27 +23,28 @@ gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 const accordionStories = [
   {
-    title: "Open with presence",
-    copy: "Notice what is already true in the moment. A shared table is enough reason to begin.",
+    title: "Start the moment",
+    copy: "You don’t need a line. A shared table, a slow line, a dog — that’s plenty of reason to say something.",
     image: "https://picsum.photos/seed/open-source-demo-table/1200/1500",
   },
   {
     title: "Follow the thread",
-    copy: "Ask one question you genuinely want answered, then let her response change the conversation.",
+    copy: "Ask the thing you actually want to know, then let her answer steer it. Curiosity beats a clever opener every time.",
     image: "https://picsum.photos/seed/quiet-cafe-conversation/1200/1500",
   },
   {
-    title: "Invite with clarity",
-    copy: "When interest feels mutual, make a specific, low-pressure invitation that leaves room for an honest answer.",
+    title: "Make the ask",
+    copy: "When it feels mutual, say something specific and low-key. Give her an easy yes — and an easy no.",
     image: "https://picsum.photos/seed/courtyard-coffee-invitation/1200/1500",
   },
 ];
 
 const marqueePhrases = [
-  "Respect before performance",
-  "Curiosity without tactics",
-  "Clarity without pressure",
-  "Confidence with character",
+  "Rizz is a skill you can rep",
+  "Funny counts",
+  "Respect is the floor",
+  "Make the ask, catch the no",
+  "Read the room",
 ];
 
 export function LandingExperience() {
@@ -120,9 +121,10 @@ export function LandingExperience() {
           <strong>RizzCode</strong>
         </Link>
         <nav aria-label="RizzCode navigation">
-          <a href="#approach">Approach</a>
-          <a href="#practice">Tonight</a>
-          <Link to="/practice">Curriculum</Link>
+          <a href="#approach">How it works</a>
+          <Link to="/practice">Practice</Link>
+          <Link to="/progress">Progress</Link>
+          <Link to="/leaderboard">Leaderboard</Link>
         </nav>
         <Link className="taste-nav__switch" to={primaryTarget}>
           Start practice
@@ -133,16 +135,16 @@ export function LandingExperience() {
       <section className="taste-hero" aria-labelledby="taste-hero-title">
         <div className="taste-hero__wash" aria-hidden="true" />
         <div className="taste-hero__copy">
-          <p className="taste-kicker">Relationship practice for men</p>
+          <p className="taste-kicker">Dating practice, LeetCode style</p>
           <h1 id="taste-hero-title">
             <span>Practice courage.</span>
             <span>Meet someone</span>
             <span className="taste-hero__intent">with intention.</span>
           </h1>
           <p className="taste-hero__lede">
-            RizzCode helps men rehearse honest conversations, read reciprocity,
-            and make respectful invitations without scripts, games, or
-            pretending to be someone else.
+            Real scenarios, three lines or texts each, scored on the stuff that
+            actually lands — listening, timing, and the nerve to make the ask. No
+            scripts, no pickup nonsense. Just reps until it clicks.
           </p>
           {isReturning ? (
             <div className="taste-stat-strip" aria-label="Your progress">
@@ -216,7 +218,7 @@ export function LandingExperience() {
           <article className="taste-bento__card taste-bento__card--scenario">
             <div className="taste-card-heading">
               <Target size={25} weight="duotone" />
-              <span>Practice in context</span>
+              <span>One real moment at a time</span>
             </div>
             <div>
               <h3>{scenario.title}</h3>
@@ -238,8 +240,8 @@ export function LandingExperience() {
             <div>
               <BookOpen size={24} weight="duotone" />
               <p>
-                Learn to follow what matters to her, not the line you planned
-                before the conversation began.
+                Learn to actually listen — chase what she just said, not the line
+                you rehearsed in the shower.
               </p>
             </div>
           </article>
@@ -248,26 +250,26 @@ export function LandingExperience() {
             <ShieldCheck size={27} weight="duotone" />
             <h3>Never a tactic.</h3>
             <p>
-              Respect, consent, and an honest exit are part of every scenario,
-              not fine print after the lesson.
+              Respect and an honest exit are baked into every rep, not fine print
+              after the lesson. Confidence, never coercion.
             </p>
           </article>
 
           <article className="taste-bento__card taste-bento__card--character">
             <Heart size={27} weight="duotone" />
-            <h3>Character shapes the posture.</h3>
+            <h3>Character is the cheat code.</h3>
             <p>
-              Good dating starts with dignity, honesty, and the self-control to
-              choose clarity over pressure.
+              Honesty, self-control, actually caring — turns out that’s also what
+              makes you magnetic. Funny how that works.
             </p>
           </article>
 
           <article className="taste-bento__card taste-bento__card--progress">
             <div className="taste-card-heading">
               <CheckCircle size={25} weight="duotone" />
-              <span>Practice that compounds</span>
+              <span>XP for getting better</span>
             </div>
-            <h3>One honest rep at a time.</h3>
+            <h3>Level up, one honest rep at a time.</h3>
             <div className="taste-mini-curriculum">
               {curriculum.slice(0, 3).map((lesson) => (
                 <div key={lesson.title}>
@@ -386,11 +388,11 @@ export function LandingExperience() {
       <footer className="taste-footer">
         <div className="taste-footer__ambient" aria-hidden="true" />
         <div className="taste-footer__copy">
-          <p>Practice for the relationship you actually want.</p>
+          <p>For the relationship you actually want.</p>
           <h2>
-            Less performance.
+            Stop rehearsing.
             <br />
-            More courage.
+            Start repping.
           </h2>
           <Link className="taste-button taste-button--lime" to={primaryTarget}>
             {primaryLabel}
@@ -402,10 +404,12 @@ export function LandingExperience() {
             <span aria-hidden="true">RC</span>
             <strong>RizzCode</strong>
           </Link>
-          <p>Respectful relationship practice for men who want something real.</p>
+          <p>Dating practice for men who want the real thing, minus the cringe.</p>
           <div>
-            <a href="#approach">Approach</a>
-            <Link to="/practice">Curriculum</Link>
+            <a href="#approach">How it works</a>
+            <Link to="/practice">Practice</Link>
+            <Link to="/progress">Progress</Link>
+            <Link to="/leaderboard">Leaderboard</Link>
           </div>
         </div>
       </footer>

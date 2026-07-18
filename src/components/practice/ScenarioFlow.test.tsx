@@ -71,7 +71,8 @@ describe("ScenarioSession — persona_message intro", () => {
     expect(
       screen.getByText(/longest monday of all time/),
     ).toBeInTheDocument();
-    expect(screen.getByText("She says")).toBeInTheDocument();
+    // Messaging mode labels the incoming bubble "Her" (in-person keeps "She says").
+    expect(screen.getByText("Her")).toBeInTheDocument();
   });
 });
 

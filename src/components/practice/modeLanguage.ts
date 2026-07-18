@@ -24,8 +24,10 @@ const IN_PERSON: ModeLanguage = {
 const MESSAGING: ModeLanguage = {
   badge: "MESSAGING",
   prompt: "What would you text?",
-  youLabel: "You say",
-  herLabel: "She says",
+  // Messaging is a chat surface, so the bubbles read like a chat log: You / Her.
+  // In-person keeps the binding "You say" / "She says" spoken framing.
+  youLabel: "You",
+  herLabel: "Her",
   thinking: "She’s typing…",
 };
 

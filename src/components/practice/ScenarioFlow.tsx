@@ -3,7 +3,7 @@
 // exactly-once result recording. An unknown or locked scenario id redirects back
 // to the curriculum with a warm message rather than 404-ing.
 
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { Navigate, useParams } from "react-router-dom";
 import { scenarioById } from "../../data/scenarios";
 import type { ApplyJudgeResultOutcome } from "../../domain/progression";
@@ -52,7 +52,10 @@ export function ScenarioSession({
   const recordedIdsRef = useRef<Set<string>>(new Set());
   const [recorded, setRecorded] = useState<RecordedResult | null>(null);
 
-  useEffect(() => {
+  // useLayoutEffect (not useEffect): the recording runs and flips `recorded`
+  // before the browser paints, so PracticeView never flashes composer-less for
+  // one frame between the judge completing and ResultView mounting.
+  useLayoutEffect(() => {
     const result = session.result;
     if (result === null) return;
     if (recordedIdsRef.current.has(result.attemptId)) return;
@@ -68,22 +71,25 @@ export function ScenarioSession({
     );
   }
 
-  if (
-    session.result !== null &&
-    recorded !== null &&
-    recorded.attemptId === session.result.attemptId
-  ) {
-    const nextId = nextRecommendedScenarioId(progress.progress, progress.plan);
-    return (
-      <ResultView
-        scenario={scenario}
-        result={session.result}
-        outcome={recorded.outcome}
-        level={progress.progress.level}
-        nextScenarioId={nextId}
-        onRunItBack={session.reset}
-      />
-    );
+  // Once a result exists, we are done with the composer. Gate the render on it
+  // so a completed-but-not-yet-recorded frame renders nothing rather than a
+  // composer-less PracticeView; the layout effect above records synchronously.
+  if (session.result !== null) {
+    if (recorded !== null && recorded.attemptId === session.result.attemptId) {
+      const nextId = nextRecommendedScenarioId(progress.progress, progress.plan);
+      return (
+        <ResultView
+          scenario={scenario}
+          result={session.result}
+          outcome={recorded.outcome}
+          level={progress.progress.level}
+          nextScenarioId={nextId}
+          persistent={progress.persistent}
+          onRunItBack={session.reset}
+        />
+      );
+    }
+    return null;
   }
 
   return <PracticeView scenario={scenario} session={session} />;
