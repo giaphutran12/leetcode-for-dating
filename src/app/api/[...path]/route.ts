@@ -20,6 +20,7 @@ import {
   signConversationSession,
   verifyConversationSession,
 } from "../../../../server/session";
+import { requestHasAuthenticatedUser } from "../../../../server/auth/verifyRequest";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -69,6 +70,18 @@ export async function POST(
   context: { params: Promise<{ path?: string[] }> },
 ) {
   const path = (await context.params).path ?? [];
+  if (!(await requestHasAuthenticatedUser(request))) {
+    const judging = path.length === 1 && path[0] === "judge";
+    return json(
+      {
+        ok: false,
+        retryable: false,
+        code: judging ? "judge_invalid_output" : "persona_invalid_request",
+        message: "Log in to continue practicing.",
+      },
+      401,
+    );
+  }
   let body: unknown;
   try {
     body = await parseBody(request);

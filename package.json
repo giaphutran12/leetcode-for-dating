@@ -17,6 +17,7 @@
     "@ai-sdk/openai": "^3.0.0",
     "@gsap/react": "^2.1.2",
     "@phosphor-icons/react": "^2.1.10",
+    "@supabase/supabase-js": "2.110.7",
     "ai": "^6.0.0",
     "dotenv": "^17.2.3",
     "gsap": "^3.13.0",

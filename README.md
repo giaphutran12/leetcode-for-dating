@@ -27,6 +27,8 @@ the Taste visual direction.
   warnings, judge retry, unknown-route handling, and authored persona fallback
 - Responsive and keyboard-usable product views at mobile, tablet, and desktop
   sizes, with reduced-motion support
+- Supabase email/password accounts with signup, login, logout, password
+  recovery, guarded product routes, and self-service account deletion
 
 The historical `/control` and `/compare` prototype routes remain available as
 visual references. They are not the production product path.
@@ -60,7 +62,33 @@ Create a private `.env.local` in this worktree:
 cp .env.example .env.local
 ```
 
-Set `OPENAI_API_KEY` inside `.env.local`. The optional
+Set `OPENAI_API_KEY` inside `.env.local`. Add the Supabase project URL,
+publishable key, server-only secret key, and local site URL:
+
+```dotenv
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+SUPABASE_SECRET_KEY=
+NEXT_PUBLIC_SITE_URL=http://127.0.0.1:4173
+```
+
+The publishable key is intentionally browser-visible. `SUPABASE_SECRET_KEY`
+must remain server-only and is used only by `DELETE /api/account`. Never give
+it a `NEXT_PUBLIC_` prefix.
+
+In Supabase Auth URL Configuration, add the deployed and local recovery
+destinations:
+
+```text
+https://rizzcode-nextjs.vercel.app/auth/callback
+https://rizzcode-nextjs.vercel.app/auth/reset
+http://127.0.0.1:4173/**
+```
+
+For production email delivery, configure custom SMTP in Supabase. The built-in
+mailer is rate-limited and intended for initial testing.
+
+The optional
 `RIZZCODE_PERSONA_MODEL` defaults to `gpt-5-nano`; the separate
 `RIZZCODE_JUDGE_MODEL` defaults to `gpt-5.4`.
 
@@ -115,7 +143,13 @@ It prints only pass or failure metadata, never the credential or transcript.
 - Next.js 16 App Router serves the product through
   `src/app/[[...slug]]/page.tsx`.
 - `src/app/api/[...path]/route.ts` owns `POST /api/persona/prepare`,
-  `POST /api/persona`, and `POST /api/judge` in one Node route module.
+  `POST /api/persona`, and `POST /api/judge` in one Node route module. Each
+  endpoint verifies the caller's Supabase access token before invoking a model.
+- `src/app/api/account/route.ts` verifies the caller's Supabase access token
+  before deleting that exact user with the server-only secret key.
+- `src/context/AuthContext.tsx` owns browser session restoration and auth
+  actions. `/auth/callback` exchanges confirmation codes and `/auth/reset`
+  exchanges recovery codes before accepting a new password.
 - `server/persona/` owns prompt-safe adaptive generation, draft preparation,
   idempotency, authored fallback, and the bounded canonical conversation store.
 - `server/runtime.ts` selects production or non-production test providers
@@ -156,7 +190,6 @@ serverless instances.
 
 ## Deliberately outside this MVP
 
-Authentication, Supabase, TinyFish, profile scraping, voice, avatars, video,
-live humans, automated messages, Elo ratings, a real global leaderboard, course
-infrastructure, attractiveness scoring, therapy, and attachment diagnosis are
-not included.
+TinyFish, profile scraping, voice, avatars, video, live humans, automated
+messages, Elo ratings, a real global leaderboard, course infrastructure,
+attractiveness scoring, therapy, and attachment diagnosis are not included.

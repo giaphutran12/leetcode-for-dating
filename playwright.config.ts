@@ -14,7 +14,7 @@ export default defineConfig({
   },
   webServer: {
     command:
-      `PORT=${port} RIZZCODE_MOCK_PERSONA=1 RIZZCODE_MOCK_JUDGE=1 npm run dev`,
+      `PORT=${port} NEXT_PUBLIC_RIZZCODE_MOCK_AUTH=1 RIZZCODE_MOCK_PERSONA=1 RIZZCODE_MOCK_JUDGE=1 npm run dev`,
     url: baseURL,
     reuseExistingServer: false,
     timeout: 120_000,

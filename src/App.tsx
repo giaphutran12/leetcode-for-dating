@@ -10,6 +10,13 @@ import { NotFoundView } from "./components/product/NotFoundView";
 import { OnboardingView } from "./components/product/OnboardingView";
 import { PracticeView } from "./components/product/PracticeView";
 import { ProgressView } from "./components/product/ProgressView";
+import {
+  AccountView,
+  AuthCallbackView,
+  LoginView,
+  ResetPasswordView,
+} from "./components/auth/AuthViews";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import { RizzCodeProvider } from "./context/RizzCodeContext";
 import { getScenario } from "./data/scenarios";
 
@@ -67,6 +74,21 @@ function DesignPicker() {
 function Routes() {
   const pathname = usePathname();
   const route = pathname.replace(/\/+$/, "") || "/";
+  const auth = useAuth();
+
+  if (route === "/auth/callback") return <AuthCallbackView />;
+  if (route === "/auth/reset") return <ResetPasswordView />;
+  if (route === "/login") {
+    return auth.user ? <TasteExperience /> : <LoginView returnTo="/" />;
+  }
+  if (auth.loading) {
+    return (
+      <main className="rizz-auth-loading" role="status">
+        Opening RizzCode…
+      </main>
+    );
+  }
+  if (!auth.user) return <LoginView returnTo={route} />;
 
   if (route === "/") return <TasteExperience />;
   if (route === "/onboarding") return <OnboardingView />;
@@ -87,6 +109,7 @@ function Routes() {
   }
   if (route === "/progress") return <ProgressView />;
   if (route === "/leaderboard") return <LeaderboardView />;
+  if (route === "/account") return <AccountView />;
   if (route === "/control") return <BaselineExperience />;
   if (route === "/compare") return <DesignPicker />;
   return <NotFoundView />;
@@ -94,8 +117,10 @@ function Routes() {
 
 export function App() {
   return (
-    <RizzCodeProvider>
-      <Routes />
-    </RizzCodeProvider>
+    <AuthProvider>
+      <RizzCodeProvider>
+        <Routes />
+      </RizzCodeProvider>
+    </AuthProvider>
   );
 }

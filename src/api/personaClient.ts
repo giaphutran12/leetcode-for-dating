@@ -4,6 +4,7 @@ import type {
   PersonaPrepareApiResponse,
   PersonaRequest,
 } from "../domain/types";
+import { authenticatedFetch } from "./authFetch";
 
 const replySchema = z.object({
   actions: z
@@ -86,7 +87,7 @@ async function callPersona(
   signal?: AbortSignal,
 ): Promise<PersonaApiResponse> {
   try {
-    const response = await fetch("/api/persona", {
+    const response = await authenticatedFetch("/api/persona", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(request),
@@ -140,7 +141,7 @@ export async function preparePersonaReply(
   signal?: AbortSignal,
 ): Promise<PersonaPrepareApiResponse> {
   try {
-    const response = await fetch("/api/persona/prepare", {
+    const response = await authenticatedFetch("/api/persona/prepare", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(request),

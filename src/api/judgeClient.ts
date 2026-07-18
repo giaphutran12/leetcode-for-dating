@@ -3,12 +3,13 @@ import type {
   JudgeRequest,
 } from "../domain/types";
 import { validateJudgeApiResponse } from "../domain/validation";
+import { authenticatedFetch } from "./authFetch";
 
 export async function requestJudgment(
   request: JudgeRequest,
 ): Promise<JudgeApiResponse> {
   try {
-    const response = await fetch("/api/judge", {
+    const response = await authenticatedFetch("/api/judge", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(request),

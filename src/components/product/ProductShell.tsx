@@ -4,6 +4,7 @@ import {
   Fire,
   House,
   ListBullets,
+  UserCircle,
   Trophy,
   X,
 } from "@phosphor-icons/react";
@@ -45,6 +46,10 @@ export function ProductShell({
           <a href="/leaderboard">
             <Trophy size={18} />
             <span>Ranks</span>
+          </a>
+          <a href="/account">
+            <UserCircle size={18} />
+            <span>Account</span>
           </a>
         </nav>
         <div className="rizz-nav__stats" aria-label="Current progress">
