@@ -221,6 +221,11 @@ export interface Progress {
   bestMasteryXP: Record<string, number>;
   completedScenarioIds: string[];
   achievements: string[];
+  // Extension beyond the plan's suggested contract (contracts are extensible):
+  // the local calendar day (YYYY-MM-DD) of the last streak-advancing completion.
+  // Drives streak day math. Milestones deliberately live in their own store, not
+  // here, so real-world self-reports never leak into public progress.
+  lastPracticeDay: string | null;
 }
 
 // Private real-world milestones (plan: "Private real-world milestones"). These
