@@ -5,7 +5,12 @@ import type {
   Evidence,
   JudgeApiResponse,
   JudgeRequest,
+  OutcomeCode,
 } from "./types";
+
+const OutcomeCodeSchema = z.enum(
+  Object.keys(OUTCOME_LABELS) as [OutcomeCode, ...OutcomeCode[]],
+);
 
 const EvidenceSchema = z.object({
   turn: z.union([
@@ -54,17 +59,7 @@ const JudgeResultSchema = z.object({
   improve: z.array(z.string()),
   betterResponse: z.string(),
   outcome: z.object({
-    code: z.enum([
-      "conversation_continues",
-      "shared_interest",
-      "contact_exchanged",
-      "date_invited",
-      "date_agreed",
-      "graceful_exit",
-      "low_interest",
-      "incompatible",
-      "boundary_crossed",
-    ]),
+    code: OutcomeCodeSchema,
     label: z.string(),
     confidence: z.enum(["low", "medium", "high"]),
     basis: z.array(EvidenceSchema).min(1),

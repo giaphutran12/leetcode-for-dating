@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { OUTCOME_LABELS } from "./constants";
 import type { JudgeApiResponse, JudgeRequest } from "./types";
 import { validateJudgeApiResponse } from "./validation";
 
@@ -70,6 +71,18 @@ function response(): JudgeApiResponse {
 describe("judge response trust boundary", () => {
   it("accepts a mechanically consistent, transcript-backed response", () => {
     expect(validateJudgeApiResponse(response(), request)).not.toBeNull();
+  });
+
+  it("accepts every canonical scenario outcome code", () => {
+    for (const [code, label] of Object.entries(OUTCOME_LABELS)) {
+      const payload = response();
+      if (payload.ok) {
+        payload.result.outcome.code = code as keyof typeof OUTCOME_LABELS;
+        payload.result.outcome.label = label;
+      }
+
+      expect(validateJudgeApiResponse(payload, request)).not.toBeNull();
+    }
   });
 
   it("rejects a result for another attempt", () => {
