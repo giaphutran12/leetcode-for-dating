@@ -42,6 +42,13 @@ test("first visit to judged in-person result, XP, and returning refresh", async 
   await expect(page.getByText("Official LLM judgment")).toBeVisible();
   await expect(page.getByText("Five-part rubric")).toBeVisible();
   await expect(page.getByText("Contact exchanged")).toBeVisible();
+  const scoreBox = await page.locator(".rizz-score-disc strong").boundingBox();
+  const scoreLabelBox = await page
+    .locator(".rizz-score-disc span")
+    .boundingBox();
+  expect(scoreBox).not.toBeNull();
+  expect(scoreLabelBox).not.toBeNull();
+  expect(scoreBox!.y + scoreBox!.height).toBeLessThan(scoreLabelBox!.y);
   await expect(page.getByText(/\+\d+ practice XP/)).toBeVisible();
 
   await page.goto("/practice");
