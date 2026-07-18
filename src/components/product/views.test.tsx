@@ -43,10 +43,13 @@ describe("product view contracts", () => {
     expect(screen.getByText("Courage")).toBeInTheDocument();
   });
 
-  it("labels the local ranking as a demo leaderboard", () => {
+  it("keeps leaderboard copy focused on competition", () => {
     withProvider(<LeaderboardView />);
-    expect(screen.getByText("Demo leaderboard")).toBeInTheDocument();
-    expect(screen.getByText(/not a real global rank/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Climb the ranks." }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/demo leaderboard/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/not a real global rank/i)).not.toBeInTheDocument();
   });
 
   it("keeps all 67 practice scenarios available from day one", () => {

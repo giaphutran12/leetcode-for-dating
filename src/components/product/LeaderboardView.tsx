@@ -1,4 +1,4 @@
-import { Crown, Info, Trophy } from "@phosphor-icons/react";
+import { Crown, Trophy } from "@phosphor-icons/react";
 import { useRizzCode } from "../../context/RizzCodeContext";
 import { ProductShell } from "./ProductShell";
 
@@ -15,7 +15,7 @@ export function LeaderboardView() {
   const players = [
     ...seededPlayers,
     {
-      name: profile.displayName === "You" ? "You (local)" : profile.displayName,
+      name: profile.displayName,
       xp: progress.publicXP,
       level: progress.level,
       local: true,
@@ -24,24 +24,10 @@ export function LeaderboardView() {
   const localRank = players.findIndex((player) => "local" in player) + 1;
 
   return (
-    <ProductShell
-      eyebrow="Leaderboard choice A"
-      title="Demo ranks. Real practice XP."
-    >
-      <aside className="rizz-demo-label">
-        <Info size={22} weight="fill" />
-        <div>
-          <strong>Demo leaderboard</strong>
-          <p>
-            Seeded players plus your local app-verified practice XP. This is not
-            a real global rank, and private milestones never touch it.
-          </p>
-        </div>
-      </aside>
-
+    <ProductShell eyebrow="Leaderboard" title="Climb the ranks.">
       <section className="rizz-rank-summary">
         <div>
-          <span>Your demo position</span>
+          <span>Your position</span>
           <strong>#{localRank}</strong>
         </div>
         <div>
@@ -54,12 +40,12 @@ export function LeaderboardView() {
         </div>
       </section>
 
-      <section className="rizz-leaderboard" aria-label="Demo leaderboard">
+      <section className="rizz-leaderboard" aria-label="Leaderboard">
         <header>
           <span>Rank</span>
           <span>Player</span>
           <span>Level</span>
-          <span>App-verified XP</span>
+          <span>XP</span>
         </header>
         {players.map((player, index) => (
           <article

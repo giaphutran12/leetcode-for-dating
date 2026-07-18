@@ -420,8 +420,7 @@
 }
 
 /* Curriculum */
-.rizz-onboarding-callout,
-.rizz-demo-label {
+.rizz-onboarding-callout {
   display: flex;
   max-width: 1372px;
   align-items: center;
@@ -433,8 +432,7 @@
   background: var(--lime);
 }
 
-.rizz-onboarding-callout > div,
-.rizz-demo-label {
+.rizz-onboarding-callout > div {
   align-items: flex-start;
 }
 
@@ -1538,21 +1536,6 @@
 }
 
 /* Leaderboard and empty */
-.rizz-demo-label {
-  width: min(1372px, calc(100% - 36px));
-}
-
-.rizz-demo-label div {
-  display: grid;
-  gap: 4px;
-}
-
-.rizz-demo-label p {
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.5;
-}
-
 .rizz-rank-summary {
   width: min(1372px, calc(100% - 36px));
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1778,8 +1761,7 @@
     border-left: 1px solid var(--ink);
   }
 
-  .rizz-onboarding-callout,
-  .rizz-demo-label {
+  .rizz-onboarding-callout {
     width: calc(100% - 24px);
     align-items: flex-start;
     flex-direction: column;

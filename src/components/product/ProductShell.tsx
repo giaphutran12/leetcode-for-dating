@@ -44,7 +44,7 @@ export function ProductShell({
           </a>
           <a href="/leaderboard">
             <Trophy size={18} />
-            <span>Demo ranks</span>
+            <span>Ranks</span>
           </a>
         </nav>
         <div className="rizz-nav__stats" aria-label="Current progress">
