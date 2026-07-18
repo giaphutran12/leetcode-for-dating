@@ -42,6 +42,15 @@ async function judge(request: JudgeRequest) {
 
 describe.skipIf(!LIVE)("live judge acceptance bands", () => {
   it("fixture 8: a fitting callback with natural humor scores >= 7", async () => {
+    // Transcript validated against the deterministic replay engine
+    // (replayTranscript over connection-playful-callback): turn 1 and turn 2
+    // both trip a positiveSignal ("uber" / "pineapple pizza", "running joke" /
+    // "pineapple pizza"), so engagement steps up and clamps at "warm" and her
+    // authored turn-1/turn-2 replies are engaged continuations, never the
+    // exitSignals wind-down ("night" etc. previously leaked in via "what's the
+    // rest of your night looking like?"). Turn 3 falls through with no signal
+    // match, so engagement stays "warm" and her turn-3 reply is the warm coffee
+    // acceptance — finalState.engagement is "warm", not a sign-off.
     const request: JudgeRequest = {
       schemaVersion: "1.0",
       attemptId: "live-accept-strong",
@@ -49,11 +58,11 @@ describe.skipIf(!LIVE)("live judge acceptance bands", () => {
       responses: [
         {
           turn: 1,
-          body: "the uber slander is unfair — i personally lobbied for a faster driver",
+          body: "ngl the uber ride gave me time to rehearse my pineapple pizza defense, i stand by every word",
         },
         {
           turn: 2,
-          body: "glad you made it though. what's the rest of your night looking like?",
+          body: "the running joke is now permanently part of my legal defense for pineapple pizza, i regret nothing",
         },
         {
           turn: 3,
