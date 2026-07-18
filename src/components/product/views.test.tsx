@@ -33,6 +33,26 @@ describe("product view contracts", () => {
     expect(screen.getByLabelText("What would you text?")).toBeInTheDocument();
   });
 
+  it("sends with Enter and keeps Shift+Enter available for new lines", () => {
+    withProvider(<PracticeView scenario={getScenario("RC-001")!} />);
+    fireEvent.click(screen.getByRole("button", { name: /start conversation/i }));
+    const composer = screen.getByLabelText("What would you say?");
+
+    fireEvent.change(composer, { target: { value: "first line" } });
+    fireEvent.keyDown(composer, { key: "Enter", shiftKey: true });
+    expect(composer).toHaveValue("first line");
+    expect(screen.getByText("0 / 6")).toBeInTheDocument();
+
+    fireEvent.change(composer, {
+      target: { value: "first line\nsecond line" },
+    });
+    expect(composer).toHaveValue("first line\nsecond line");
+
+    fireEvent.keyDown(composer, { key: "Enter" });
+    expect(composer).toHaveValue("");
+    expect(screen.getByText("first line second line")).toBeInTheDocument();
+  });
+
   it("offers a working onboarding skip with Growth Direction", () => {
     withProvider(<OnboardingView />);
     fireEvent.click(

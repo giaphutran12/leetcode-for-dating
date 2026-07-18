@@ -451,6 +451,19 @@ export function PracticeView({ scenario }: { scenario: Scenario }) {
                 id="practice-response"
                 value={session.input}
                 onChange={(event) => session.setInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (
+                    event.key !== "Enter" ||
+                    event.shiftKey ||
+                    event.nativeEvent.isComposing
+                  ) {
+                    return;
+                  }
+                  event.preventDefault();
+                  if (!session.isBusy && session.input.trim()) {
+                    event.currentTarget.form?.requestSubmit();
+                  }
+                }}
                 rows={4}
                 maxLength={420}
                 disabled={session.isBusy}
@@ -461,12 +474,15 @@ export function PracticeView({ scenario }: { scenario: Scenario }) {
                 }
               />
               <div>
-                <span
-                  className={session.inputError ? "rizz-input-error" : undefined}
-                  role={session.inputError ? "alert" : undefined}
-                >
-                  {session.inputError ?? `${session.input.length}/420`}
-                </span>
+                <div>
+                  <span
+                    className={session.inputError ? "rizz-input-error" : undefined}
+                    role={session.inputError ? "alert" : undefined}
+                  >
+                    {session.inputError ?? `${session.input.length}/420`}
+                  </span>
+                  <small>Enter to send · Shift+Enter for new line</small>
+                </div>
                 <div className="rizz-composer__actions">
                   {session.canEnd && (
                     <button

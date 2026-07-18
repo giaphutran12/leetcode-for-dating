@@ -1248,7 +1248,13 @@
   margin-top: 10px;
 }
 
-.rizz-composer > div > span {
+.rizz-composer > div > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.rizz-composer > div > div:first-child > span,
+.rizz-composer > div > div:first-child > small {
   color: #756d61;
   font-size: 10px;
 }
