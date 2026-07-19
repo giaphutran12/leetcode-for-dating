@@ -1,16 +1,23 @@
 import { ArrowRight, Code, Sparkle } from "@phosphor-icons/react";
+import { Link, Route, Routes } from "react-router-dom";
 import { BaselineExperience } from "./components/BaselineExperience";
-import { TasteExperience } from "./components/TasteExperience";
+import { LandingExperience } from "./components/LandingExperience";
+import { NotFound } from "./components/NotFound";
+import { OnboardingFlow } from "./components/onboarding/OnboardingFlow";
+import { CurriculumView } from "./components/practice/CurriculumView";
+import { ScenarioFlow } from "./components/practice/ScenarioFlow";
+import { LeaderboardView } from "./components/progress/LeaderboardView";
+import { ProgressView } from "./components/progress/ProgressView";
 
 function DesignPicker() {
   return (
     <main className="picker">
       <div className="picker__glow" />
       <header className="picker__header">
-        <a className="picker__brand" href="/" aria-label="RizzCode home">
+        <Link className="picker__brand" to="/" aria-label="RizzCode home">
           <span>RC</span>
           RIZZCODE
-        </a>
+        </Link>
         <p>Prototype comparison</p>
       </header>
 
@@ -63,15 +70,17 @@ function DesignPicker() {
 }
 
 export function App() {
-  const route = window.location.pathname.replace(/\/+$/, "") || "/";
-
-  if (route === "/control") {
-    return <BaselineExperience />;
-  }
-
-  if (route === "/compare") {
-    return <DesignPicker />;
-  }
-
-  return <TasteExperience />;
+  return (
+    <Routes>
+      <Route path="/" element={<LandingExperience />} />
+      <Route path="/onboarding" element={<OnboardingFlow />} />
+      <Route path="/practice" element={<CurriculumView />} />
+      <Route path="/practice/:scenarioId" element={<ScenarioFlow />} />
+      <Route path="/progress" element={<ProgressView />} />
+      <Route path="/leaderboard" element={<LeaderboardView />} />
+      <Route path="/control" element={<BaselineExperience />} />
+      <Route path="/compare" element={<DesignPicker />} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
 }

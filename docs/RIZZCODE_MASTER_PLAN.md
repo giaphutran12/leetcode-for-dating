@@ -858,7 +858,7 @@ Provider rules:
 - Use the direct `@ai-sdk/openai` provider. Do not route this MVP through AI Gateway or
   call the OpenAI HTTP API manually.
 - Read the optional `RIZZCODE_JUDGE_MODEL` server variable and default it to
-  `gpt-5.4`. Both comparison builds must use the same model value.
+  `gpt-5.4-mini`. Both comparison builds must use the same model value.
 - Apply a timeout and at most one retry for transient provider failure.
 - Do not give the judge tools, browsing, memory, or access to other users' attempts.
 
@@ -869,7 +869,7 @@ import { generateText, Output } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 
-const modelId = process.env.RIZZCODE_JUDGE_MODEL || "gpt-5.4";
+const modelId = process.env.RIZZCODE_JUDGE_MODEL || "gpt-5.4-mini";
 
 const { output } = await generateText({
   model: openai(modelId),
