@@ -91,6 +91,7 @@ export function TasteExperience() {
           <a href="/practice">Curriculum</a>
           <a href="/progress">Progress</a>
           <a href="/leaderboard">Leaderboard</a>
+          <a href="/account">{auth.user ? "Account" : "Log in"}</a>
         </nav>
         <a className="taste-nav__switch" href={nextHref}>
           {auth.user && profile.onboardingComplete ? "Next rep" : "Try a rep"}

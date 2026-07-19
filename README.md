@@ -48,6 +48,8 @@ import { BrandButton, BrandLogo, RizzMeter } from "@/design-system";
   an account; completed scenarios remain replayable without signing in
 - Supabase Google OAuth and email/password accounts with login, logout,
   password recovery, protected account management, and self-service deletion
+- Direct login access from both the public landing navigation and product
+  navigation
 - Guest reps, XP, attempts, profile, and milestones merge into the account on
   first login, then sync across signed-in devices
 
