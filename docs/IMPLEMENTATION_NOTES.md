@@ -30,7 +30,7 @@ The judge server:
 2. Loads the canonical scenario.
 3. Requires an exact match with the server-owned adaptive conversation.
 4. Detects hard gates before the provider call.
-5. Calls the separate `gpt-5.4` judge through Vercel AI SDK v6.
+5. Calls the separate `gpt-5.6-luna` judge through Vercel AI SDK v6.
 6. Requires atomic structured output through `generateText()` and
    `Output.object()`.
 7. Verifies five unique criteria and exact user-turn excerpts.

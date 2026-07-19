@@ -22,7 +22,7 @@ export interface JudgeProvider {
 
 export const aiSdkJudgeProvider: JudgeProvider = {
   async evaluate({ scenario, attempt, hardGate, abortSignal }) {
-    const modelId = process.env.RIZZCODE_JUDGE_MODEL || "gpt-5.4";
+    const modelId = process.env.RIZZCODE_JUDGE_MODEL || "gpt-5.6-luna";
     const { output } = await generateText({
       model: openai(modelId),
       system: JUDGE_SYSTEM_PROMPT,

@@ -15,7 +15,7 @@ describe("conversation logging", () => {
       event: "judge.started",
       attemptId: "attempt-log",
       scenarioId: "RC-001",
-      model: "gpt-5.4",
+      model: "gpt-5.6-luna",
       conversation: [
         {
           id: "m1",
@@ -50,7 +50,7 @@ describe("conversation logging", () => {
       event: "judge.started",
       attemptId: "attempt-log",
       scenarioId: "RC-001",
-      model: "gpt-5.4",
+      model: "gpt-5.6-luna",
     });
     expect(payload.conversation).toHaveLength(2);
     expect(payload).not.toHaveProperty("sessionToken");

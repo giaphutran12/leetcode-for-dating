@@ -148,7 +148,7 @@ export async function judgeAttempt(
           },
         };
   const hardGate = detectHardGates(attempt);
-  const model = process.env.RIZZCODE_JUDGE_MODEL || "gpt-5.4";
+  const model = process.env.RIZZCODE_JUDGE_MODEL || "gpt-5.6-luna";
   logConversationEvent("info", {
     event: "judge.started",
     attemptId: request.attemptId,

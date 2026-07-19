@@ -90,7 +90,7 @@ mailer is rate-limited and intended for initial testing.
 
 The optional
 `RIZZCODE_PERSONA_MODEL` defaults to `gpt-5.4-nano`; the separate
-`RIZZCODE_JUDGE_MODEL` defaults to `gpt-5.4`.
+`RIZZCODE_JUDGE_MODEL` defaults to `gpt-5.6-luna`.
 
 ### Conversation debug logs
 
