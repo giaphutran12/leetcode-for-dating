@@ -179,7 +179,8 @@ export interface PersonaRequest {
 export type PersonaErrorCode =
   | "persona_invalid_request"
   | "persona_conflict"
-  | "persona_unavailable";
+  | "persona_unavailable"
+  | "practice_limit_reached";
 
 export type PersonaApiResponse =
   | {

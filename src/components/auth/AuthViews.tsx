@@ -17,6 +17,7 @@ import {
   validatePassword,
 } from "../../lib/auth";
 import { ProductShell } from "../product/ProductShell";
+import { BillingPanel } from "../billing/BillingPanel";
 
 function AuthFrame({
   eyebrow,
@@ -129,7 +130,7 @@ export function LoginView({
       eyebrow={mode === "forgot" ? "Password recovery" : "Your account"}
       title={
         guestLimitReached
-          ? "Three reps down."
+          ? "First rep down."
           : mode === "signup"
           ? "Start training."
           : mode === "forgot"
@@ -138,7 +139,7 @@ export function LoginView({
       }
       intro={
         guestLimitReached
-          ? "Log in to unlock the fourth exercise and keep your run going."
+          ? "Log in to save your result and unlock your next guided practice."
           : mode === "signup"
           ? "Create one account for your reps, rank, and progress."
           : mode === "forgot"
@@ -461,6 +462,7 @@ export function AccountView() {
             available on your other devices.
           </p>
         </div>
+        <BillingPanel />
         {error && (
           <p className="rizz-auth__error" role="alert">
             {error}

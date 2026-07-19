@@ -7,6 +7,15 @@ Approval date: 2026-07-18
 Canonical repository: `giaphutran12/leetcode-for-dating`
 Canonical branch at approval: `codex/two-prototype-designs`
 
+## Monetization amendment · July 19, 2026
+
+The approved Stripe implementation in
+[STRIPE_BILLING.md](STRIPE_BILLING.md) supersedes the original free-access
+assumption for guided AI practice. The curriculum may remain visible, but guest
+access stops after one completed practice and authenticated free access uses
+server-owned practice credits before requiring RizzCode Pro. This amendment
+does not change the conversation, judgment, safety, or progression contracts.
+
 This is the source of truth for the RizzCode product and the implementation handoff.
 It is intentionally written so that an implementation agent can build the product
 without reopening product questions.

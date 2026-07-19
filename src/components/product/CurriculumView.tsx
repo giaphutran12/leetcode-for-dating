@@ -51,8 +51,7 @@ export function CurriculumView({
       {!auth.user && (
         <div className="rizz-inline-notice" role="status">
           <span>
-            Try three exercises free. Log in only when you are ready for the
-            fourth.
+            Try one exercise free. Log in when you are ready to keep going.
           </span>
           <strong>
             {Math.min(completedCount, GUEST_SCENARIO_LIMIT)}/

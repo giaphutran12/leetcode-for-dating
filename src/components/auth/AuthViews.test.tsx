@@ -39,7 +39,7 @@ describe("auth views", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: "Three reps down." }),
+      screen.getByRole("heading", { name: "First rep down." }),
     ).toBeInTheDocument();
     fireEvent.click(
       screen.getByRole("button", { name: "Continue with Google" }),

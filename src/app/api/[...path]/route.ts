@@ -20,6 +20,12 @@ import {
   signConversationSession,
   verifyConversationSession,
 } from "../../../../server/session";
+import { authenticatedUserForRequest } from "../../../../server/auth/verifyRequest";
+import { billingStorageConfigured } from "../../../../server/billing/config";
+import {
+  claimPracticeAccess,
+  createBillingAdminClient,
+} from "../../../../server/billing/store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -101,6 +107,47 @@ export async function POST(
     const preparing = path[1] === "prepare";
     if (path.length === 2 && !preparing) {
       return json({ ok: false, message: "Not found." }, 404);
+    }
+    if (parsed.data.turn === 1) {
+      const user = await authenticatedUserForRequest(request);
+      if (user && billingStorageConfigured()) {
+        try {
+          const access = await claimPracticeAccess(
+            createBillingAdminClient(),
+            user.id,
+            parsed.data.attemptId,
+            parsed.data.scenarioId,
+          );
+          if (!access.allowed) {
+            const result: PersonaApiResponse = {
+              ok: false,
+              retryable: false,
+              code: "practice_limit_reached",
+              message:
+                "Your free guided practices are complete. Pick a plan to keep training.",
+            };
+            return json(result, 402);
+          }
+        } catch {
+          const result: PersonaApiResponse = {
+            ok: false,
+            retryable: true,
+            code: "persona_unavailable",
+            message:
+              "Practice access could not be verified. Your line is preserved.",
+          };
+          return json(result, 503);
+        }
+      } else if (user && process.env.NODE_ENV === "production") {
+        const result: PersonaApiResponse = {
+          ok: false,
+          retryable: true,
+          code: "persona_unavailable",
+          message:
+            "Practice access is not configured. Your line is preserved.",
+        };
+        return json(result, 503);
+      }
     }
     let canonicalAttempt: Attempt;
     try {

@@ -1,6 +1,6 @@
 import type { Progress } from "./types";
 
-export const GUEST_SCENARIO_LIMIT = 3;
+export const GUEST_SCENARIO_LIMIT = 1;
 
 export function completedScenarioCount(progress: Progress): number {
   return new Set(progress.completedScenarioIds).size;

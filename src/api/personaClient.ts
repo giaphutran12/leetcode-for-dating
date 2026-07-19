@@ -59,6 +59,7 @@ const responseSchema = z.discriminatedUnion("ok", [
       "persona_invalid_request",
       "persona_conflict",
       "persona_unavailable",
+      "practice_limit_reached",
     ]),
     message: z.string(),
   }),

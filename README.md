@@ -266,8 +266,11 @@ preparation latency, but it is not required for turn-to-turn correctness across
 serverless instances.
 
 Guest access is a conversion gate, not an authorization boundary. The client
-allows three distinct completed scenarios, keeps those replays available, and
-asks for login before a fourth new scenario. Account deletion remains
+allows one completed scenario and asks for login before another new scenario.
+Authenticated guided-practice credits and paid access are enforced server-side
+when the first AI generation starts for a new attempt. Stripe Checkout,
+webhooks, and setup are documented in
+[docs/STRIPE_BILLING.md](docs/STRIPE_BILLING.md). Account deletion remains
 server-authenticated.
 
 ## Deliberately outside this MVP

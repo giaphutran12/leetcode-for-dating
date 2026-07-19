@@ -122,3 +122,12 @@ Playwright runs the full UI against the real Next.js route handler with mock
 providers selected only in a non-production server process. Production ignores
 `RIZZCODE_MOCK_PERSONA` and `RIZZCODE_MOCK_JUDGE`, so both production paths
 remain configured LLM providers.
+
+## Billing and guided-practice access
+
+Stripe billing is documented in [STRIPE_BILLING.md](STRIPE_BILLING.md).
+Checkout, portal sessions, Price selection, webhook verification, subscription
+storage, and practice-credit claims are server-owned. Guests can complete one
+practice before login. Authenticated free use is counted atomically when the
+first AI generation starts for a new attempt, so retries of the same attempt do
+not consume another credit.

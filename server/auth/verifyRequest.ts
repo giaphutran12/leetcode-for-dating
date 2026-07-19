@@ -1,12 +1,17 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type User } from "@supabase/supabase-js";
 
-export async function requestHasAuthenticatedUser(request: Request) {
+export async function authenticatedUserForRequest(
+  request: Request,
+): Promise<User | null> {
   if (
     process.env.NODE_ENV === "test" ||
     (process.env.NODE_ENV !== "production" &&
       process.env.NEXT_PUBLIC_RIZZCODE_MOCK_AUTH === "1")
   ) {
-    return true;
+    return {
+      id: "local-e2e-user",
+      email: "local@rizzcode.test",
+    } as User;
   }
 
   const publicUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
@@ -16,7 +21,7 @@ export async function requestHasAuthenticatedUser(request: Request) {
   const token = authorization.startsWith("Bearer ")
     ? authorization.slice("Bearer ".length).trim()
     : "";
-  if (!publicUrl || !publishableKey || !token) return false;
+  if (!publicUrl || !publishableKey || !token) return null;
 
   const client = createClient(publicUrl, publishableKey, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -25,5 +30,9 @@ export async function requestHasAuthenticatedUser(request: Request) {
     data: { user },
     error,
   } = await client.auth.getUser(token);
-  return !error && Boolean(user);
+  return error ? null : user;
+}
+
+export async function requestHasAuthenticatedUser(request: Request) {
+  return Boolean(await authenticatedUserForRequest(request));
 }
