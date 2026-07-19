@@ -3,6 +3,10 @@ import {
   createBillingAdminClient,
   getBillingStatus,
 } from "../../../../../server/billing/store";
+import {
+  createStripeClient,
+  resolveStripePlans,
+} from "../../../../../server/billing/stripeClient";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,10 +22,15 @@ export async function GET(request: Request) {
   const user = await authenticatedUserForRequest(request);
   if (!user) return json({ ok: false, message: "Log in to view billing." }, 401);
   try {
+    const [status, plans] = await Promise.all([
+      getBillingStatus(createBillingAdminClient(), user.id),
+      resolveStripePlans(createStripeClient()),
+    ]);
     return json(
       {
         ok: true,
-        ...(await getBillingStatus(createBillingAdminClient(), user.id)),
+        ...status,
+        plans,
       },
       200,
     );

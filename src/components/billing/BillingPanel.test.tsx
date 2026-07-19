@@ -25,6 +25,22 @@ describe("billing panel", () => {
       currentPeriodEnd: null,
       freeCreditsUsed: 1,
       freeCreditsRemaining: 1,
+      plans: {
+        monthly: {
+          lookupKey: "rizzcode_pro_monthly",
+          priceId: "price_monthly",
+          currency: "usd",
+          unitAmount: 1499,
+          displayPrice: "$14.99",
+        },
+        annual: {
+          lookupKey: "rizzcode_pro_annual",
+          priceId: "price_annual",
+          currency: "usd",
+          unitAmount: 9999,
+          displayPrice: "$99.99",
+        },
+      },
     });
   });
 
@@ -59,6 +75,22 @@ describe("billing panel", () => {
       currentPeriodEnd: "2026-08-19T00:00:00.000Z",
       freeCreditsUsed: 2,
       freeCreditsRemaining: 0,
+      plans: {
+        monthly: {
+          lookupKey: "rizzcode_pro_monthly",
+          priceId: "price_monthly",
+          currency: "usd",
+          unitAmount: 1499,
+          displayPrice: "$14.99",
+        },
+        annual: {
+          lookupKey: "rizzcode_pro_annual",
+          priceId: "price_annual",
+          currency: "usd",
+          unitAmount: 9999,
+          displayPrice: "$99.99",
+        },
+      },
     });
     vi.mocked(createBillingPortal).mockResolvedValue({
       ok: false,

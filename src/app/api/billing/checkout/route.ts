@@ -1,15 +1,15 @@
 import { z } from "zod";
 import { authenticatedUserForRequest } from "../../../../../server/auth/verifyRequest";
-import {
-  siteUrl,
-  stripePriceIdForPlan,
-} from "../../../../../server/billing/config";
+import { siteUrl } from "../../../../../server/billing/config";
 import {
   createBillingAdminClient,
   getBillingStatus,
   getOrCreateStripeCustomer,
 } from "../../../../../server/billing/store";
-import { createStripeClient } from "../../../../../server/billing/stripeClient";
+import {
+  createStripeClient,
+  resolveStripePlan,
+} from "../../../../../server/billing/stripeClient";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -53,6 +53,7 @@ export async function POST(request: Request) {
       stripe,
       user,
     });
+    const resolvedPlan = await resolveStripePlan(stripe, parsed.data.plan);
     const baseUrl = siteUrl();
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
@@ -60,7 +61,7 @@ export async function POST(request: Request) {
       client_reference_id: user.id,
       line_items: [
         {
-          price: stripePriceIdForPlan(parsed.data.plan),
+          price: resolvedPlan.priceId,
           quantity: 1,
         },
       ],

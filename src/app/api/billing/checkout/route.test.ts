@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   getBillingStatus: vi.fn(),
   getOrCreateStripeCustomer: vi.fn(),
   checkoutCreate: vi.fn(),
+  resolveStripePlan: vi.fn(),
 }));
 
 vi.mock("../../../../../server/auth/verifyRequest", () => ({
@@ -13,7 +14,6 @@ vi.mock("../../../../../server/auth/verifyRequest", () => ({
 }));
 vi.mock("../../../../../server/billing/config", () => ({
   siteUrl: () => "https://rizzcode.example",
-  stripePriceIdForPlan: (plan: string) => `price_${plan}`,
 }));
 vi.mock("../../../../../server/billing/store", () => ({
   createBillingAdminClient: mocks.createBillingAdminClient,
@@ -24,6 +24,7 @@ vi.mock("../../../../../server/billing/stripeClient", () => ({
   createStripeClient: () => ({
     checkout: { sessions: { create: mocks.checkoutCreate } },
   }),
+  resolveStripePlan: mocks.resolveStripePlan,
 }));
 
 import { POST } from "./route";
@@ -38,12 +39,18 @@ describe("billing checkout route", () => {
     mocks.createBillingAdminClient.mockReturnValue({});
     mocks.getBillingStatus.mockResolvedValue({ paid: false });
     mocks.getOrCreateStripeCustomer.mockResolvedValue("cus_test");
+    mocks.resolveStripePlan.mockImplementation(
+      async (_stripe: unknown, plan: string) => ({
+        lookupKey: `rizzcode_pro_${plan}`,
+        priceId: `price_${plan}`,
+      }),
+    );
     mocks.checkoutCreate.mockResolvedValue({
       url: "https://checkout.stripe.com/test",
     });
   });
 
-  it("maps an allowlisted plan to a server-owned recurring Price ID", async () => {
+  it("maps an allowlisted plan through its stable Stripe lookup key", async () => {
     const response = await POST(
       new Request("https://rizzcode.example/api/billing/checkout", {
         method: "POST",
@@ -62,6 +69,10 @@ describe("billing checkout route", () => {
         line_items: [{ price: "price_annual", quantity: 1 }],
         client_reference_id: "user-1",
       }),
+    );
+    expect(mocks.resolveStripePlan).toHaveBeenCalledWith(
+      expect.anything(),
+      "annual",
     );
   });
 

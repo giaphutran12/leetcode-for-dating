@@ -22,6 +22,22 @@ const statusSchema = z.discriminatedUnion("ok", [
     currentPeriodEnd: z.string().nullable(),
     freeCreditsUsed: z.number().int().nonnegative(),
     freeCreditsRemaining: z.number().int().nonnegative(),
+    plans: z.object({
+      monthly: z.object({
+        lookupKey: z.literal("rizzcode_pro_monthly"),
+        priceId: z.string(),
+        currency: z.string(),
+        unitAmount: z.number().int().nonnegative(),
+        displayPrice: z.string(),
+      }),
+      annual: z.object({
+        lookupKey: z.literal("rizzcode_pro_annual"),
+        priceId: z.string(),
+        currency: z.string(),
+        unitAmount: z.number().int().nonnegative(),
+        displayPrice: z.string(),
+      }),
+    }),
   }),
   z.object({ ok: z.literal(false), message: z.string() }),
 ]);

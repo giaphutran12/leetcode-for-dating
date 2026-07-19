@@ -48,6 +48,22 @@ describe("billing client", () => {
         currentPeriodEnd: null,
         freeCreditsUsed: 2,
         freeCreditsRemaining: 1,
+        plans: {
+          monthly: {
+            lookupKey: "rizzcode_pro_monthly",
+            priceId: "price_monthly",
+            currency: "usd",
+            unitAmount: 1499,
+            displayPrice: "$14.99",
+          },
+          annual: {
+            lookupKey: "rizzcode_pro_annual",
+            priceId: "price_annual",
+            currency: "usd",
+            unitAmount: 9999,
+            displayPrice: "$99.99",
+          },
+        },
       }),
     );
     await expect(loadBillingStatus()).resolves.toMatchObject({

@@ -2,24 +2,15 @@ import { describe, expect, it } from "vitest";
 import {
   billingStorageConfigured,
   siteUrl,
-  stripePriceIdForPlan,
+  STRIPE_PLAN_LOOKUP_KEYS,
 } from "./config";
 
 describe("billing configuration", () => {
-  it("maps plans to server-owned Stripe Price IDs", () => {
-    const environment = {
-      NODE_ENV: "test",
-      STRIPE_MONTHLY_PRICE_ID: " price_monthly ",
-      STRIPE_ANNUAL_PRICE_ID: "price_annual",
-    } as NodeJS.ProcessEnv;
-    expect(stripePriceIdForPlan("monthly", environment)).toBe("price_monthly");
-    expect(stripePriceIdForPlan("annual", environment)).toBe("price_annual");
-  });
-
-  it("does not silently invent a missing Stripe price", () => {
-    expect(() =>
-      stripePriceIdForPlan("monthly", {} as NodeJS.ProcessEnv),
-    ).toThrow(/monthly pricing is not configured/i);
+  it("uses stable Stripe lookup keys instead of deploy-time Price IDs", () => {
+    expect(STRIPE_PLAN_LOOKUP_KEYS).toEqual({
+      monthly: "rizzcode_pro_monthly",
+      annual: "rizzcode_pro_annual",
+    });
   });
 
   it("normalizes the public site URL and detects storage configuration", () => {

@@ -98,7 +98,9 @@ export function BillingPanel() {
               disabled={Boolean(working)}
             >
               <Lightning size={18} weight="fill" />
-              {working === "monthly" ? "Opening…" : "$14.99 monthly"}
+              {working === "monthly"
+                ? "Opening…"
+                : `${status.plans.monthly.displayPrice} monthly`}
             </BrandButton>
             <BrandButton
               intent="secondary"
@@ -107,7 +109,9 @@ export function BillingPanel() {
               disabled={Boolean(working)}
             >
               <CreditCard size={18} />
-              {working === "annual" ? "Opening…" : "$99.99 yearly"}
+              {working === "annual"
+                ? "Opening…"
+                : `${status.plans.annual.displayPrice} yearly`}
             </BrandButton>
           </div>
         </>
