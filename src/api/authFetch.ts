@@ -16,11 +16,9 @@ export async function authenticatedFetch(
   } = client
     ? await client.auth.getSession()
     : { data: { session: null } };
-  if (!session?.access_token) {
-    throw new Error("authentication_required");
-  }
-
   const headers = new Headers(init.headers);
-  headers.set("authorization", `Bearer ${session.access_token}`);
+  if (session?.access_token) {
+    headers.set("authorization", `Bearer ${session.access_token}`);
+  }
   return fetch(input, { ...init, headers });
 }

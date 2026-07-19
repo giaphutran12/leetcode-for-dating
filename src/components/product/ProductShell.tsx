@@ -9,6 +9,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { useRizzCode } from "../../context/RizzCodeContext";
+import { useAuth } from "../../context/AuthContext";
 import "../../styles/product.css";
 
 export function ProductShell({
@@ -22,6 +23,7 @@ export function ProductShell({
   actions?: ReactNode;
 }>) {
   const { progress, storageWarning, dismissWarning } = useRizzCode();
+  const auth = useAuth();
 
   return (
     <main className="rizz-product">
@@ -49,7 +51,7 @@ export function ProductShell({
           </a>
           <a href="/account">
             <UserCircle size={18} />
-            <span>Account</span>
+            <span>{auth.user ? "Account" : "Log in"}</span>
           </a>
         </nav>
         <div className="rizz-nav__stats" aria-label="Current progress">

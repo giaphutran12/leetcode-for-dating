@@ -12,6 +12,7 @@ import {
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useRizzCode } from "../context/RizzCodeContext";
+import { useAuth } from "../context/AuthContext";
 import { nextPracticeScenario } from "../domain/progression";
 import { modules, scenarios } from "../data/scenarios";
 import "../styles/taste.css";
@@ -47,11 +48,14 @@ export function TasteExperience() {
   const pageRef = useRef<HTMLElement>(null);
   const [activeAccordion, setActiveAccordion] = useState(0);
   const { profile, progress } = useRizzCode();
+  const auth = useAuth();
   const featured = scenarios[1];
   const next = nextPracticeScenario(progress, profile);
-  const startHref = profile.onboardingComplete
-    ? `/practice/${next.id}`
-    : "/onboarding";
+  const startHref = !auth.user
+    ? `/practice/${scenarios[0].id}`
+    : profile.onboardingComplete
+      ? `/practice/${next.id}`
+      : "/onboarding";
 
   useGSAP(
     () => {
@@ -86,7 +90,7 @@ export function TasteExperience() {
           <a href="/leaderboard">Leaderboard</a>
         </nav>
         <a className="taste-nav__switch" href={startHref}>
-          {profile.onboardingComplete ? "Next rep" : "Start practice"}
+          {auth.user && profile.onboardingComplete ? "Next rep" : "Try a rep"}
           <ArrowUpRight size={17} weight="bold" />
         </a>
       </header>
@@ -107,7 +111,9 @@ export function TasteExperience() {
           </p>
           <div className="taste-hero__actions">
             <a className="taste-button taste-button--ink" href={startHref}>
-              {profile.onboardingComplete ? "Run the next scenario" : "Find your starting track"}
+              {auth.user && profile.onboardingComplete
+                ? "Run the next scenario"
+                : "Try the first scenario"}
               <ArrowRight size={19} weight="bold" />
             </a>
             <a className="taste-button taste-button--quiet" href="#approach">

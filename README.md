@@ -27,8 +27,10 @@ the Taste visual direction.
   warnings, judge retry, unknown-route handling, and authored persona fallback
 - Responsive and keyboard-usable product views at mobile, tablet, and desktop
   sizes, with reduced-motion support
-- Supabase email/password accounts with signup, login, logout, password
-  recovery, guarded product routes, and self-service account deletion
+- Three completed scenarios for guests before the fourth new scenario asks for
+  an account; completed scenarios remain replayable without signing in
+- Supabase Google OAuth and email/password accounts with login, logout,
+  password recovery, protected account management, and self-service deletion
 
 The historical `/control` and `/compare` prototype routes remain available as
 visual references. They are not the production product path.
@@ -84,6 +86,28 @@ https://rizzcode-nextjs.vercel.app/auth/callback
 https://rizzcode-nextjs.vercel.app/auth/reset
 http://127.0.0.1:4173/**
 ```
+
+### Enable Google login
+
+Google login uses Supabase's PKCE OAuth flow. The Google client secret belongs
+in Supabase Auth, not in Vercel and not in this repository.
+
+1. In Google Auth Platform, configure Branding, Audience, and the `openid`,
+   email, and profile scopes.
+2. Create an OAuth Client ID with application type **Web application**.
+3. Add `https://rizzcode-nextjs.vercel.app` as an authorized JavaScript origin.
+   Add the local origin while developing.
+4. Add the callback URL shown on the Supabase Google provider page as the
+   authorized redirect URI. It has the form
+   `https://<project-ref>.supabase.co/auth/v1/callback`.
+5. In Supabase Dashboard, open Authentication, then Sign In / Providers,
+   enable Google, and paste the Google Client ID and Client Secret.
+6. In Supabase Auth URL Configuration, keep the production Site URL and the
+   `/auth/callback` redirect URLs above allowlisted.
+
+The browser calls `signInWithOAuth({ provider: "google" })`, Supabase exchanges
+the PKCE code, and RizzCode returns the user to the scenario that triggered the
+login prompt. Guest progress stays in the same browser's local storage.
 
 For production email delivery, configure custom SMTP in Supabase. The built-in
 mailer is rate-limited and intended for initial testing.
@@ -162,12 +186,14 @@ It prints only pass or failure metadata, never the credential or transcript.
 - Next.js 16 App Router serves the product through
   `src/app/[[...slug]]/page.tsx`.
 - `src/app/api/[...path]/route.ts` owns `POST /api/persona/prepare`,
-  `POST /api/persona`, and `POST /api/judge` in one Node route module. Each
-  endpoint verifies the caller's Supabase access token before invoking a model.
+  `POST /api/persona`, and `POST /api/judge` in one Node route module. These
+  practice endpoints accept guests and attach a Supabase access token when a
+  signed-in user has one.
 - `src/app/api/account/route.ts` verifies the caller's Supabase access token
   before deleting that exact user with the server-only secret key.
-- `src/context/AuthContext.tsx` owns browser session restoration and auth
-  actions. `/auth/callback` exchanges confirmation codes and `/auth/reset`
+- `src/context/AuthContext.tsx` owns browser session restoration, Google OAuth,
+  and email/password auth actions. `/auth/callback` exchanges OAuth or
+  confirmation codes, preserves a safe local return path, and `/auth/reset`
   exchanges recovery codes before accepting a new password.
 - `server/persona/` owns prompt-safe adaptive generation, draft preparation,
   idempotency, authored fallback, and the bounded canonical conversation store.
@@ -206,6 +232,11 @@ Canonical active conversation state travels in a six-hour, tamper-resistant
 server-signed receipt. The process-local cache improves idempotency and draft
 preparation latency, but it is not required for turn-to-turn correctness across
 serverless instances.
+
+Guest access is a conversion gate, not an authorization boundary. The client
+allows three distinct completed scenarios, keeps those replays available, and
+asks for login before a fourth new scenario. Account deletion remains
+server-authenticated.
 
 ## Deliberately outside this MVP
 

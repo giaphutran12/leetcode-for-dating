@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowRight, Code, Sparkle } from "@phosphor-icons/react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { BaselineExperience } from "./components/BaselineExperience";
 import { TasteExperience } from "./components/TasteExperience";
 import { CurriculumView } from "./components/product/CurriculumView";
@@ -17,8 +17,10 @@ import {
   ResetPasswordView,
 } from "./components/auth/AuthViews";
 import { AuthProvider, useAuth } from "./context/AuthContext";
-import { RizzCodeProvider } from "./context/RizzCodeContext";
+import { RizzCodeProvider, useRizzCode } from "./context/RizzCodeContext";
 import { getScenario } from "./data/scenarios";
+import { requiresLoginForScenario } from "./domain/guestAccess";
+import { safeReturnPath } from "./lib/auth";
 
 function DesignPicker() {
   return (
@@ -73,22 +75,31 @@ function DesignPicker() {
 
 function Routes() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const route = pathname.replace(/\/+$/, "") || "/";
   const auth = useAuth();
+  const { progress } = useRizzCode();
 
   if (route === "/auth/callback") return <AuthCallbackView />;
   if (route === "/auth/reset") return <ResetPasswordView />;
   if (route === "/login") {
-    return auth.user ? <TasteExperience /> : <LoginView returnTo="/" />;
-  }
-  if (auth.loading) {
-    return (
-      <main className="rizz-auth-loading" role="status">
-        Opening RizzCode…
-      </main>
+    if (auth.loading) {
+      return (
+        <main className="rizz-auth-loading" role="status">
+          Opening RizzCode…
+        </main>
+      );
+    }
+    const returnTo = safeReturnPath(searchParams.get("returnTo"));
+    return auth.user ? (
+      <TasteExperience />
+    ) : (
+      <LoginView
+        returnTo={returnTo}
+        guestLimitReached={searchParams.get("reason") === "guest-limit"}
+      />
     );
   }
-  if (!auth.user) return <LoginView returnTo={route} />;
 
   if (route === "/") return <TasteExperience />;
   if (route === "/onboarding") return <OnboardingView />;
@@ -101,6 +112,24 @@ function Routes() {
       scenarioId = undefined;
     }
     const scenario = scenarioId ? getScenario(scenarioId) : undefined;
+    if (
+      scenario &&
+      auth.loading &&
+      requiresLoginForScenario(progress, scenario.id, false)
+    ) {
+      return (
+        <main className="rizz-auth-loading" role="status">
+          Opening RizzCode…
+        </main>
+      );
+    }
+    if (
+      scenario &&
+      !auth.loading &&
+      requiresLoginForScenario(progress, scenario.id, Boolean(auth.user))
+    ) {
+      return <LoginView returnTo={route} guestLimitReached />;
+    }
     return scenario ? (
       <PracticeView scenario={scenario} />
     ) : (
@@ -109,7 +138,16 @@ function Routes() {
   }
   if (route === "/progress") return <ProgressView />;
   if (route === "/leaderboard") return <LeaderboardView />;
-  if (route === "/account") return <AccountView />;
+  if (route === "/account") {
+    if (auth.loading) {
+      return (
+        <main className="rizz-auth-loading" role="status">
+          Opening RizzCode…
+        </main>
+      );
+    }
+    return auth.user ? <AccountView /> : <LoginView returnTo="/account" />;
+  }
   if (route === "/control") return <BaselineExperience />;
   if (route === "/compare") return <DesignPicker />;
   return <NotFoundView />;

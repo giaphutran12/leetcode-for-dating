@@ -11,6 +11,7 @@ import {
 } from "react";
 import {
   authConfigured,
+  getAuthCallbackUrl,
   getSiteUrl,
   getSupabaseBrowserClient,
 } from "../lib/auth";
@@ -22,6 +23,7 @@ type AuthContextValue = {
   loading: boolean;
   session: Session | null;
   user: User | null;
+  signInWithGoogle(returnTo?: string): Promise<AuthResult>;
   signIn(email: string, password: string): Promise<AuthResult>;
   signUp(email: string, password: string): Promise<AuthResult>;
   signOut(): Promise<AuthResult>;
@@ -88,6 +90,17 @@ export function AuthProvider({ children }: PropsWithChildren) {
       loading,
       session,
       user: mockAuth ? mockUser : session?.user ?? null,
+      signInWithGoogle: client
+        ? async (returnTo) => {
+            const { error } = await client.auth.signInWithOAuth({
+              provider: "google",
+              options: {
+                redirectTo: getAuthCallbackUrl(returnTo),
+              },
+            });
+            return { error: error?.message ?? null };
+          }
+        : unavailable,
       signIn: client
         ? async (email, password) => {
             const { error } = await client.auth.signInWithPassword({

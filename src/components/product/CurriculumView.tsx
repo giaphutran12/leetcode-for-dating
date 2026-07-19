@@ -4,6 +4,12 @@ import {
   Sparkle,
 } from "@phosphor-icons/react";
 import { useRizzCode } from "../../context/RizzCodeContext";
+import { useAuth } from "../../context/AuthContext";
+import {
+  completedScenarioCount,
+  GUEST_SCENARIO_LIMIT,
+  loginPathForScenario,
+} from "../../domain/guestAccess";
 import { masteryXP, nextPracticeScenario } from "../../domain/progression";
 import { modules, scenarios } from "../../data/scenarios";
 import {
@@ -18,7 +24,13 @@ export function CurriculumView({
   notice?: string;
 }) {
   const { profile, progress } = useRizzCode();
+  const auth = useAuth();
   const next = nextPracticeScenario(progress, profile);
+  const completedCount = completedScenarioCount(progress);
+  const guestLimitReached =
+    !auth.loading &&
+    !auth.user &&
+    completedCount >= GUEST_SCENARIO_LIMIT;
 
   return (
     <ProductShell
@@ -34,6 +46,18 @@ export function CurriculumView({
       {notice && (
         <div className="rizz-inline-notice" role="status">
           {notice}
+        </div>
+      )}
+      {!auth.user && (
+        <div className="rizz-inline-notice" role="status">
+          <span>
+            Try three exercises free. Log in only when you are ready for the
+            fourth.
+          </span>
+          <strong>
+            {Math.min(completedCount, GUEST_SCENARIO_LIMIT)}/
+            {GUEST_SCENARIO_LIMIT} guest reps complete
+          </strong>
         </div>
       )}
 
@@ -95,6 +119,7 @@ export function CurriculumView({
                 const complete = progress.completedScenarioIds.includes(
                   scenario.id,
                 );
+                const locked = guestLimitReached && !complete;
                 const best = progress.bestScores[scenario.id];
                 const bestMastery = progress.bestMasteryXP[scenario.id] ?? 0;
                 const possibleGain = Math.max(
@@ -104,7 +129,9 @@ export function CurriculumView({
                 return (
                   <article
                     className="rizz-scenario-card"
-                    data-state={complete ? "complete" : "available"}
+                    data-state={
+                      complete ? "complete" : locked ? "locked" : "available"
+                    }
                     key={scenario.id}
                   >
                     <div className="rizz-scenario-card__top">
@@ -113,6 +140,8 @@ export function CurriculumView({
                       </span>
                       {complete ? (
                         <CheckCircle size={20} weight="fill" />
+                      ) : locked ? (
+                        <span className="rizz-available">Login required</span>
                       ) : (
                         <span className="rizz-available">Available</span>
                       )}
@@ -139,8 +168,18 @@ export function CurriculumView({
                         Up to {possibleGain + (complete ? 0 : 10)} XP
                       </span>
                     </div>
-                    <a href={`/practice/${scenario.id}`}>
-                      {complete ? "Run it again" : "Enter scenario"}
+                    <a
+                      href={
+                        locked
+                          ? loginPathForScenario(scenario.id)
+                          : `/practice/${scenario.id}`
+                      }
+                    >
+                      {complete
+                        ? "Run it again"
+                        : locked
+                          ? "Log in for this rep"
+                          : "Enter scenario"}
                       <ArrowRight size={17} />
                     </a>
                   </article>

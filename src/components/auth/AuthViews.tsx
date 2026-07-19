@@ -3,6 +3,7 @@
 import {
   ArrowRight,
   CheckCircle,
+  GoogleLogo,
   LockKey,
   SignOut,
   Trash,
@@ -46,7 +47,13 @@ function AuthFrame({
   );
 }
 
-export function LoginView({ returnTo }: { returnTo?: string }) {
+export function LoginView({
+  returnTo,
+  guestLimitReached = false,
+}: {
+  returnTo?: string;
+  guestLimitReached?: boolean;
+}) {
   const auth = useAuth();
   const [mode, setMode] = useState<"login" | "signup" | "forgot">("login");
   const [email, setEmail] = useState("");
@@ -54,6 +61,17 @@ export function LoginView({ returnTo }: { returnTo?: string }) {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  async function signInWithGoogle() {
+    setError(null);
+    setNotice(null);
+    setSubmitting(true);
+    const result = await auth.signInWithGoogle(returnTo);
+    if (result.error) {
+      setError(result.error);
+      setSubmitting(false);
+    }
+  }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -106,14 +124,18 @@ export function LoginView({ returnTo }: { returnTo?: string }) {
     <AuthFrame
       eyebrow={mode === "forgot" ? "Password recovery" : "Your account"}
       title={
-        mode === "signup"
+        guestLimitReached
+          ? "Three reps down."
+          : mode === "signup"
           ? "Start training."
           : mode === "forgot"
             ? "Reset the lock."
             : "Welcome back."
       }
       intro={
-        mode === "signup"
+        guestLimitReached
+          ? "Log in to unlock the fourth exercise and keep your run going."
+          : mode === "signup"
           ? "Create one account for your reps, rank, and progress."
           : mode === "forgot"
             ? "We will send a secure password reset link."
@@ -125,6 +147,18 @@ export function LoginView({ returnTo }: { returnTo?: string }) {
           Authentication is not configured on this environment.
         </p>
       )}
+      <button
+        className="rizz-google-button"
+        type="button"
+        onClick={signInWithGoogle}
+        disabled={submitting || !auth.configured}
+      >
+        <GoogleLogo size={20} weight="bold" />
+        Continue with Google
+      </button>
+      <div className="rizz-auth__divider" aria-hidden="true">
+        <span>or use email</span>
+      </div>
       <form className="rizz-auth__form" onSubmit={submit}>
         <label>
           Email
@@ -210,12 +244,15 @@ export function AuthCallbackView() {
       setError("This sign-in link is missing its one-time code.");
       return;
     }
+    const returnTo = safeReturnPath(
+      new URLSearchParams(window.location.search).get("returnTo"),
+    );
     void auth.exchangeCode(code).then((result) => {
       if (result.error) {
         setError("This sign-in link is invalid or expired. Request a new one.");
         return;
       }
-      window.location.replace("/");
+      window.location.replace(returnTo);
     });
   }, [auth]);
 

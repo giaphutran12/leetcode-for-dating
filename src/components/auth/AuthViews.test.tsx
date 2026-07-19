@@ -7,6 +7,7 @@ const authMock = vi.hoisted(() => ({
   loading: false,
   session: null as { access_token: string } | null,
   user: null,
+  signInWithGoogle: vi.fn(),
   signIn: vi.fn(),
   signUp: vi.fn(),
   signOut: vi.fn(),
@@ -25,6 +26,30 @@ describe("auth views", () => {
     authMock.configured = true;
     authMock.loading = false;
     authMock.session = null;
+    authMock.user = null;
+    authMock.signInWithGoogle.mockResolvedValue({ error: null });
+  });
+
+  it("starts Google OAuth with the gated scenario return path", async () => {
+    render(
+      <LoginView
+        returnTo="/practice/RC-004"
+        guestLimitReached
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Three reps down." }),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Continue with Google" }),
+    );
+
+    await waitFor(() =>
+      expect(authMock.signInWithGoogle).toHaveBeenCalledWith(
+        "/practice/RC-004",
+      ),
+    );
   });
 
   it("requests password recovery without revealing account existence", async () => {

@@ -144,6 +144,7 @@
 }
 
 .rizz-auth .rizz-primary-button,
+.rizz-auth .rizz-google-button,
 .rizz-account .rizz-secondary-button,
 .rizz-account .rizz-danger-button {
   display: inline-flex;
@@ -162,9 +163,36 @@
 }
 
 .rizz-auth .rizz-primary-button:disabled,
+.rizz-auth .rizz-google-button:disabled,
 .rizz-account button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
+}
+
+.rizz-auth .rizz-google-button {
+  width: 100%;
+  color: var(--ink);
+  background: var(--cream);
+}
+
+.rizz-auth__divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0;
+  color: #6f675c;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.rizz-auth__divider::before,
+.rizz-auth__divider::after {
+  height: 1px;
+  flex: 1;
+  background: rgba(23, 22, 18, 0.25);
+  content: "";
 }
 
 .rizz-auth__switches {
@@ -798,6 +826,13 @@
   background: #e1f2b7;
 }
 
+.rizz-scenario-card[data-state="locked"] {
+  background: #e5ded2;
+}
+
+.rizz-scenario-card[data-state="locked"] > a {
+  background: var(--oxblood);
+}
 .rizz-scenario-card__top,
 .rizz-scenario-card__meta {
   display: flex;

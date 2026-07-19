@@ -28,6 +28,12 @@ export function getSiteUrl() {
   return "http://127.0.0.1:4173";
 }
 
+export function getAuthCallbackUrl(returnTo?: string) {
+  const callback = new URL(`${getSiteUrl()}/auth/callback`);
+  callback.searchParams.set("returnTo", safeReturnPath(returnTo));
+  return callback.toString();
+}
+
 export function safeReturnPath(value: string | null | undefined) {
   if (!value || !value.startsWith("/") || value.startsWith("//")) return "/";
   if (value.startsWith("/auth/") || value === "/login") return "/";

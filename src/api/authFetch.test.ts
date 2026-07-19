@@ -29,12 +29,13 @@ describe("authenticatedFetch", () => {
     );
   });
 
-  it("does not call a protected endpoint without a session", async () => {
+  it("allows a guest request without an authorization header", async () => {
     getSession.mockResolvedValue({ data: { session: null } });
 
-    await expect(authenticatedFetch("/api/judge")).rejects.toThrow(
-      "authentication_required",
-    );
-    expect(fetch).not.toHaveBeenCalled();
+    await authenticatedFetch("/api/judge");
+
+    expect(fetch).toHaveBeenCalledOnce();
+    const [, init] = vi.mocked(fetch).mock.calls[0];
+    expect(new Headers(init?.headers).has("authorization")).toBe(false);
   });
 });

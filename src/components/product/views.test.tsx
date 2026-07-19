@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { RizzCodeProvider } from "../../context/RizzCodeContext";
+import { AuthProvider } from "../../context/AuthContext";
 import { getScenario } from "../../data/scenarios";
 import { OnboardingView } from "./OnboardingView";
 import { PracticeView } from "./PracticeView";
@@ -8,7 +9,11 @@ import { LeaderboardView } from "./LeaderboardView";
 import { CurriculumView } from "./CurriculumView";
 
 function withProvider(node: React.ReactNode) {
-  return render(<RizzCodeProvider>{node}</RizzCodeProvider>);
+  return render(
+    <AuthProvider>
+      <RizzCodeProvider>{node}</RizzCodeProvider>
+    </AuthProvider>,
+  );
 }
 
 describe("product view contracts", () => {
@@ -78,5 +83,35 @@ describe("product view contracts", () => {
     expect(screen.getAllByRole("link", { name: /enter scenario/i })).toHaveLength(
       67,
     );
+  });
+
+  it("asks a guest to log in before opening a fourth new scenario", async () => {
+    window.localStorage.setItem(
+      "rizzcode.v1.progress",
+      JSON.stringify({
+        version: 1,
+        publicXP: 30,
+        level: 1,
+        streak: 1,
+        bestScores: { "RC-001": 7, "RC-002": 7, "RC-003": 7 },
+        bestMasteryXP: { "RC-001": 7, "RC-002": 7, "RC-003": 7 },
+        completedScenarioIds: ["RC-001", "RC-002", "RC-003"],
+        achievements: [],
+        rewardedAttemptIds: ["a", "b", "c"],
+        lastPracticeDate: "2026-07-19",
+      }),
+    );
+
+    withProvider(<CurriculumView />);
+
+    expect(
+      await screen.findByText("3/3 guest reps complete"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("link", { name: /log in for this rep/i }),
+    ).toHaveLength(64);
+    expect(
+      screen.getAllByRole("link", { name: /run it again/i }),
+    ).toHaveLength(3);
   });
 });
