@@ -22,9 +22,15 @@ export interface PersonaProvider {
   }): Promise<PersonaModelDraft>;
 }
 
+export const DEFAULT_PERSONA_MODEL = "gpt-5.4-nano";
+
+export const PERSONA_OPENAI_OPTIONS = {
+  textVerbosity: "low" as const,
+};
+
 export const aiSdkPersonaProvider: PersonaProvider = {
   async generate({ scenario, attempt, turn, body, abortSignal }) {
-    const modelId = process.env.RIZZCODE_PERSONA_MODEL || "gpt-5.4-nano";
+    const modelId = process.env.RIZZCODE_PERSONA_MODEL || DEFAULT_PERSONA_MODEL;
     const { output } = await generateText({
       model: openai(modelId),
       system: PERSONA_SYSTEM_PROMPT,
@@ -38,10 +44,7 @@ export const aiSdkPersonaProvider: PersonaProvider = {
       abortSignal,
       maxRetries: 0,
       providerOptions: {
-        openai: {
-          reasoningEffort: "minimal",
-          textVerbosity: "low",
-        },
+        openai: PERSONA_OPENAI_OPTIONS,
       },
     });
 

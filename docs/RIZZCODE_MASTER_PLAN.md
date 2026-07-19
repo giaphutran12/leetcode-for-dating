@@ -944,8 +944,11 @@ export interface JudgeEngine {
 
 The persona is separate from the judge. Production persona reactions come from a
 server-side LLM using Vercel AI SDK v6, Zod, `generateText()`, and `Output.object()`.
-The default model is `gpt-5.4-nano` with minimal reasoning and low verbosity. The server
-owns the canonical transcript, state transitions, idempotency, and terminal state.
+The default model is `gpt-5.4-nano` with model-default reasoning (`none` for
+this model) and low verbosity. The provider does not pin reasoning effort, which
+prevents a future model swap from retaining an unsupported model-specific
+value. The server owns the canonical transcript, state transitions,
+idempotency, and terminal state.
 
 Persona output must contain one to three short actions, at least one text action, and
 only allowlisted emoji reactions. The prompt requests at most one question. Engagement

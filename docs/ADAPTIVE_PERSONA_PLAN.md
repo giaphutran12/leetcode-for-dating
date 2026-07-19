@@ -68,9 +68,11 @@ Production generation uses Vercel AI SDK v6 with:
 - `Output.object()`
 - the direct OpenAI provider
 
-The default persona model is `gpt-5.4-nano` with minimal reasoning and low text
-verbosity for the fastest supported structured reaction path. It is configurable with
-`RIZZCODE_PERSONA_MODEL`. `OPENAI_API_KEY` remains server-only.
+The default persona model is `gpt-5.4-nano` with model-default reasoning (`none`
+for this model) and low text verbosity for the fastest supported structured
+reaction path. Reasoning effort is intentionally not pinned so a model swap
+cannot inherit an unsupported model-specific value. The model is configurable
+with `RIZZCODE_PERSONA_MODEL`. `OPENAI_API_KEY` remains server-only.
 
 The model receives:
 
