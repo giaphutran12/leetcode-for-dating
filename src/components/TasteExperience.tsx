@@ -51,11 +51,10 @@ export function TasteExperience() {
   const auth = useAuth();
   const featured = scenarios[1];
   const next = nextPracticeScenario(progress, profile);
-  const startHref = !auth.user
-    ? `/practice/${scenarios[0].id}`
-    : profile.onboardingComplete
+  const nextHref =
+    auth.user && profile.onboardingComplete
       ? `/practice/${next.id}`
-      : "/onboarding";
+      : "/practice";
 
   useGSAP(
     () => {
@@ -89,7 +88,7 @@ export function TasteExperience() {
           <a href="/progress">Progress</a>
           <a href="/leaderboard">Leaderboard</a>
         </nav>
-        <a className="taste-nav__switch" href={startHref}>
+        <a className="taste-nav__switch" href={nextHref}>
           {auth.user && profile.onboardingComplete ? "Next rep" : "Try a rep"}
           <ArrowUpRight size={17} weight="bold" />
         </a>
@@ -110,10 +109,8 @@ export function TasteExperience() {
             make practice worth coming back to.
           </p>
           <div className="taste-hero__actions">
-            <a className="taste-button taste-button--ink" href={startHref}>
-              {auth.user && profile.onboardingComplete
-                ? "Run the next scenario"
-                : "Try the first scenario"}
+            <a className="taste-button taste-button--ink" href="/practice">
+              Start practice
               <ArrowRight size={19} weight="bold" />
             </a>
             <a className="taste-button taste-button--quiet" href="#approach">
@@ -305,7 +302,7 @@ export function TasteExperience() {
                 <p>{module.description}</p>
               </article>
             ))}
-            <a className="taste-button taste-button--lime" href={startHref}>
+            <a className="taste-button taste-button--lime" href="/onboarding">
               Build my practice path
               <ArrowRight size={20} weight="bold" />
             </a>
@@ -322,8 +319,8 @@ export function TasteExperience() {
             <br />
             More game.
           </h2>
-          <a className="taste-button taste-button--lime" href={startHref}>
-            Start the first rep
+          <a className="taste-button taste-button--lime" href="/practice">
+            Start practice
             <ArrowRight size={20} weight="bold" />
           </a>
         </div>
