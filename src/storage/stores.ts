@@ -21,7 +21,7 @@ const growthDirectionSchema = z.object({
   nextRep: z.string(),
 });
 
-const profileSchema = z.object({
+export const profileSchema = z.object({
   version: z.literal(1),
   displayName: z.string(),
   goals: z.array(z.string()),
@@ -41,7 +41,7 @@ const profileSchema = z.object({
   }),
 });
 
-const progressSchema = z.object({
+export const progressSchema = z.object({
   version: z.literal(1),
   publicXP: z.number().int().nonnegative(),
   level: z.number().int().positive(),
@@ -54,7 +54,7 @@ const progressSchema = z.object({
   lastPracticeDate: z.string().optional(),
 });
 
-const milestonesSchema = z.object({
+export const milestonesSchema = z.object({
   version: z.literal(1),
   earned: z.array(
     z.enum([
@@ -88,7 +88,7 @@ const practiceMessageSchema = z.object({
   createdAt: z.string(),
 });
 
-const attemptSchema = z
+export const attemptSchema = z
   .object({
     id: z.string(),
     scenarioId: z.string(),
@@ -123,6 +123,27 @@ type LoadResult<T> = {
   value: T;
   warning?: string;
 };
+
+export type PersistedRecords = {
+  profile: UserProfile;
+  progress: Progress;
+  attempts: Attempt[];
+  milestones: Milestones;
+};
+
+const persistedRecordsSchema = z.object({
+  profile: profileSchema,
+  progress: progressSchema,
+  attempts: z.array(attemptSchema),
+  milestones: milestonesSchema,
+});
+
+export function parsePersistedRecords(
+  value: unknown,
+): PersistedRecords | null {
+  const result = persistedRecordsSchema.safeParse(value);
+  return result.success ? (result.data as PersistedRecords) : null;
+}
 
 function readRecord<T>(
   key: string,
@@ -160,13 +181,7 @@ function readRecord<T>(
   }
 }
 
-export function loadAllRecords(): {
-  profile: UserProfile;
-  progress: Progress;
-  attempts: Attempt[];
-  milestones: Milestones;
-  warning?: string;
-} {
+export function loadAllRecords(): PersistedRecords & { warning?: string } {
   const profile = readRecord(
     STORAGE_KEYS.profile,
     profileSchema,
@@ -198,6 +213,19 @@ export function loadAllRecords(): {
       attempts.warning ??
       milestones.warning,
   };
+}
+
+export function writeAllRecords(records: PersistedRecords): string | undefined {
+  for (const [key, value] of [
+    [STORAGE_KEYS.profile, records.profile],
+    [STORAGE_KEYS.progress, records.progress],
+    [STORAGE_KEYS.attempts, records.attempts],
+    [STORAGE_KEYS.milestones, records.milestones],
+  ] as const) {
+    const warning = writeRecord(key, value);
+    if (warning) return warning;
+  }
+  return undefined;
 }
 
 export function writeRecord(

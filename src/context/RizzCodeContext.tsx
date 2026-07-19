@@ -3,9 +3,11 @@ import {
   type PropsWithChildren,
   useCallback,
   useContext,
+  useEffect,
   useRef,
   useState,
 } from "react";
+import { useAuth } from "./AuthContext";
 import { createProfile, defaultProfile, type OnboardingAnswers } from "../domain/onboarding";
 import {
   applyJudgment,
@@ -25,8 +27,16 @@ import {
   clearProgressRecords,
   loadAllRecords,
   STORAGE_KEYS,
+  type PersistedRecords,
+  writeAllRecords,
   writeRecord,
 } from "../storage/stores";
+import {
+  loadAccountRecords,
+  mergeAccountRecords,
+  saveAccountRecords,
+} from "../storage/accountSync";
+import { getSupabaseBrowserClient } from "../lib/auth";
 
 type JudgmentReceipt = {
   xpDelta: number;
@@ -52,6 +62,8 @@ interface RizzCodeState {
 const RizzCodeContext = createContext<RizzCodeState | null>(null);
 
 export function RizzCodeProvider({ children }: PropsWithChildren) {
+  const auth = useAuth();
+  const client = getSupabaseBrowserClient();
   const initial = useRef<ReturnType<typeof loadAllRecords> | null>(null);
   if (initial.current === null) initial.current = loadAllRecords();
 
@@ -61,6 +73,76 @@ export function RizzCodeProvider({ children }: PropsWithChildren) {
   const [attempts, setAttempts] = useState(initial.current.attempts);
   const [milestones, setMilestones] = useState(initial.current.milestones);
   const [storageWarning, setStorageWarning] = useState(initial.current.warning);
+  const recordsRef = useRef<PersistedRecords>({
+    profile: initial.current.profile,
+    progress: initial.current.progress,
+    attempts: initial.current.attempts,
+    milestones: initial.current.milestones,
+  });
+  const [syncedUserId, setSyncedUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    recordsRef.current = { profile, progress, attempts, milestones };
+  }, [attempts, milestones, profile, progress]);
+
+  useEffect(() => {
+    const userId = auth.user?.id;
+    if (!client || !userId) {
+      setSyncedUserId(null);
+      return;
+    }
+
+    let active = true;
+    const syncGuestStateIntoAccount = async () => {
+      try {
+        const remote = await loadAccountRecords(client, userId);
+        const merged = mergeAccountRecords(recordsRef.current, remote);
+        await saveAccountRecords(client, userId, merged);
+        if (!active) return;
+        recordsRef.current = merged;
+        setProfile(merged.profile);
+        progressRef.current = merged.progress;
+        setProgressState(merged.progress);
+        setAttempts(merged.attempts);
+        setMilestones(merged.milestones);
+        setStorageWarning(
+          (current) => writeAllRecords(merged) ?? current,
+        );
+        setSyncedUserId(userId);
+      } catch {
+        if (!active) return;
+        setStorageWarning(
+          "Your progress is safe on this device, but account sync is temporarily unavailable.",
+        );
+      }
+    };
+
+    void syncGuestStateIntoAccount();
+    return () => {
+      active = false;
+    };
+  }, [auth.user?.id, client]);
+
+  useEffect(() => {
+    const userId = auth.user?.id;
+    if (!client || !userId || syncedUserId !== userId) return;
+    const timeout = window.setTimeout(() => {
+      void saveAccountRecords(client, userId, recordsRef.current).catch(() => {
+        setStorageWarning(
+          "Your progress is safe on this device, but account sync is temporarily unavailable.",
+        );
+      });
+    }, 500);
+    return () => window.clearTimeout(timeout);
+  }, [
+    attempts,
+    auth.user?.id,
+    client,
+    milestones,
+    profile,
+    progress,
+    syncedUserId,
+  ]);
 
   const setProgress = useCallback((next: Progress) => {
     progressRef.current = next;

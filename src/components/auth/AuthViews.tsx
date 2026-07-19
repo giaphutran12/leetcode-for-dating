@@ -452,7 +452,10 @@ export function AccountView() {
         <div>
           <p className="rizz-kicker">Signed in as</p>
           <h2>{auth.user?.email}</h2>
-          <p>Your practice data stays in this browser for the current MVP.</p>
+          <p>
+            Your reps, progress, and milestones sync to this account and stay
+            available on your other devices.
+          </p>
         </div>
         {error && (
           <p className="rizz-auth__error" role="alert">
