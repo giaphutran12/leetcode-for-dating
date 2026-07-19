@@ -139,7 +139,7 @@ These decisions are final for this implementation:
 24. If judging is unavailable, preserve the completed transcript and offer `Retry
     judgment`. Do not invent an official score or award XP.
 25. The MVP persona uses a canonical server-side LLM conversation with authored
-    fallbacks. The default low-latency persona model is `gpt-5.4-mini`.
+    fallbacks. The default low-latency persona model is `gpt-5.4-nano`.
 26. Messaging drafts may prepare a reply after five idle seconds without committing a
     turn. Only an explicit send advances the canonical conversation.
 27. The judge must use Vercel AI SDK v6 with the direct OpenAI provider.
@@ -944,7 +944,7 @@ export interface JudgeEngine {
 
 The persona is separate from the judge. Production persona reactions come from a
 server-side LLM using Vercel AI SDK v6, Zod, `generateText()`, and `Output.object()`.
-The default model is `gpt-5.4-mini` with minimal reasoning and low verbosity. The server
+The default model is `gpt-5.4-nano` with minimal reasoning and low verbosity. The server
 owns the canonical transcript, state transitions, idempotency, and terminal state.
 
 Persona output must contain one to three short actions, at least one text action, and

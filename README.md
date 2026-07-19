@@ -12,7 +12,7 @@ the Taste visual direction.
 - Spark and Connection curriculum with all 67 scenarios available immediately
 - Exactly 67 playable In Person and Messaging scenarios from the closed catalog
 - Three to six user-authored turns, with earlier persona or boundary exits
-- Server-side adaptive persona reactions using `gpt-5.4-mini` by default
+- Server-side adaptive persona reactions using `gpt-5.4-nano` by default
 - Messaging draft preparation after five idle seconds, plus Sent, Delivered,
   Seen, and persona typing states
 - Server-only LLM judge using Vercel AI SDK v6, `@ai-sdk/openai`, Zod,
@@ -89,7 +89,7 @@ For production email delivery, configure custom SMTP in Supabase. The built-in
 mailer is rate-limited and intended for initial testing.
 
 The optional
-`RIZZCODE_PERSONA_MODEL` defaults to `gpt-5.4-mini`; the separate
+`RIZZCODE_PERSONA_MODEL` defaults to `gpt-5.4-nano`; the separate
 `RIZZCODE_JUDGE_MODEL` defaults to `gpt-5.4`.
 
 ### Conversation debug logs

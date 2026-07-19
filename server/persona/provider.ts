@@ -24,7 +24,7 @@ export interface PersonaProvider {
 
 export const aiSdkPersonaProvider: PersonaProvider = {
   async generate({ scenario, attempt, turn, body, abortSignal }) {
-    const modelId = process.env.RIZZCODE_PERSONA_MODEL || "gpt-5.4-mini";
+    const modelId = process.env.RIZZCODE_PERSONA_MODEL || "gpt-5.4-nano";
     const { output } = await generateText({
       model: openai(modelId),
       system: PERSONA_SYSTEM_PROMPT,

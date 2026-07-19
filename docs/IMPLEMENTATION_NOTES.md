@@ -12,7 +12,7 @@ changed duplicates, skipped turns, terminal mutations, and attempts that cross
 scenario identities.
 
 Production persona generation uses Vercel AI SDK v6, the direct OpenAI
-provider, Zod, `generateText()`, and `Output.object()`. `gpt-5.4-mini` is the
+provider, Zod, `generateText()`, and `Output.object()`. `gpt-5.4-nano` is the
 default low-latency persona model. Structured actions require at least one short
 text bubble and optional allowlisted emoji reactions. The prompt requests at
 most one question. Boundary state is monotonic and engagement moves at most one
