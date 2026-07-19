@@ -20,7 +20,7 @@ npm run dev
 Open the local URL Vite prints (`http://127.0.0.1:4173`). The judge route
 (`/api/judge`) reads `OPENAI_API_KEY` server-side only — it is never bundled
 or exposed to the browser. `RIZZCODE_JUDGE_MODEL` is optional and defaults to
-`gpt-5.4` when unset. See `.env.example` for both variables; never commit a
+`gpt-5.4-mini` when unset. See `.env.example` for both variables; never commit a
 real key.
 
 ## Scripts

@@ -13,7 +13,7 @@ export interface ModelEnv {
   RIZZCODE_JUDGE_MODEL?: string;
 }
 
-const DEFAULT_JUDGE_MODEL = "gpt-5.4";
+const DEFAULT_JUDGE_MODEL = "gpt-5.4-mini";
 
 // The function the route calls for one judgment. Signature matches JudgeDeps.callModel.
 export type CallJudgeModel = (
