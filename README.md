@@ -31,6 +31,8 @@ the Taste visual direction.
   an account; completed scenarios remain replayable without signing in
 - Supabase Google OAuth and email/password accounts with login, logout,
   password recovery, protected account management, and self-service deletion
+- Guest reps, XP, attempts, profile, and milestones merge into the account on
+  first login, then sync across signed-in devices
 
 The historical `/control` and `/compare` prototype routes remain available as
 visual references. They are not the production product path.
@@ -107,7 +109,20 @@ in Supabase Auth, not in Vercel and not in this repository.
 
 The browser calls `signInWithOAuth({ provider: "google" })`, Supabase exchanges
 the PKCE code, and RizzCode returns the user to the scenario that triggered the
-login prompt. Guest progress stays in the same browser's local storage.
+login prompt. On the first authenticated load, the app merges the guest's
+local profile, reps, XP, attempts, and milestones with any existing account
+state. It saves the merged record to both Supabase and the current browser, so
+the account can restore that progress on another device without discarding
+newer local work.
+
+### Enable account progress sync
+
+Apply `supabase/migrations/20260719012231_account_state_sync.sql` to the same
+Supabase project used by the production auth environment. The migration creates
+one versioned JSON state row per user, enables row-level security, grants no
+anonymous access, and limits authenticated reads and writes to
+`auth.uid() = user_id`. Account deletion removes the state row through the
+foreign-key cascade.
 
 For production email delivery, configure custom SMTP in Supabase. The built-in
 mailer is rate-limited and intended for initial testing.
