@@ -4,7 +4,7 @@ import {
   type User,
 } from "@supabase/supabase-js";
 import type Stripe from "stripe";
-import { FREE_PRACTICE_CREDITS } from "./config";
+import { FREE_AUTHENTICATED_PRACTICE_CREDITS } from "./config";
 
 export const PAID_SUBSCRIPTION_STATUSES = ["active", "trialing"] as const;
 
@@ -98,7 +98,7 @@ export async function getBillingStatus(
     freeCreditsUsed,
     freeCreditsRemaining: Math.max(
       0,
-      FREE_PRACTICE_CREDITS - freeCreditsUsed,
+      FREE_AUTHENTICATED_PRACTICE_CREDITS - freeCreditsUsed,
     ),
   };
 }

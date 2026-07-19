@@ -2,6 +2,7 @@
 
 import { CreditCard, Lightning } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
+import { BrandButton, BrandKicker } from "@/design-system";
 import {
   createBillingPortal,
   createCheckout,
@@ -52,7 +53,7 @@ export function BillingPanel() {
 
   return (
     <section aria-labelledby="billing-title">
-      <p className="rizz-kicker">RizzCode Pro</p>
+      <BrandKicker>RizzCode Pro</BrandKicker>
       <h2 id="billing-title">
         {status?.ok && status.paid ? "Your plan is active." : "Keep training."}
       </h2>
@@ -71,15 +72,15 @@ export function BillingPanel() {
               : "."}
           </p>
           <div className="rizz-account__actions">
-            <button
-              className="rizz-secondary-button"
+            <BrandButton
+              intent="secondary"
               type="button"
               onClick={openPortal}
               disabled={Boolean(working)}
             >
               <CreditCard size={18} />
               {working === "portal" ? "Opening…" : "Manage billing"}
-            </button>
+            </BrandButton>
           </div>
         </>
       ) : (
@@ -90,24 +91,24 @@ export function BillingPanel() {
             Subscribe when the free reps are done.
           </p>
           <div className="rizz-account__actions">
-            <button
-              className="rizz-primary-button"
+            <BrandButton
+              intent="lime"
               type="button"
               onClick={() => checkout("monthly")}
               disabled={Boolean(working)}
             >
               <Lightning size={18} weight="fill" />
               {working === "monthly" ? "Opening…" : "$14.99 monthly"}
-            </button>
-            <button
-              className="rizz-secondary-button"
+            </BrandButton>
+            <BrandButton
+              intent="secondary"
               type="button"
               onClick={() => checkout("annual")}
               disabled={Boolean(working)}
             >
               <CreditCard size={18} />
               {working === "annual" ? "Opening…" : "$99.99 yearly"}
-            </button>
+            </BrandButton>
           </div>
         </>
       )}

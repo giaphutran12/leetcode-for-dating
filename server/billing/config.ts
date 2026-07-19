@@ -1,4 +1,4 @@
-export const FREE_PRACTICE_CREDITS = 3;
+export const FREE_AUTHENTICATED_PRACTICE_CREDITS = 2;
 
 export type BillingPlan = "monthly" | "annual";
 

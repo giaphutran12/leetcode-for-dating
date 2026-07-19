@@ -68,7 +68,7 @@ begin
     return query select
       true,
       false,
-      greatest(0, 3 - used_count),
+      greatest(0, 2 - used_count),
       'existing_attempt'::text;
     return;
   end if;
@@ -88,7 +88,7 @@ begin
     from public.rizzcode_practice_usage
     where user_id = p_user_id;
 
-  if used_count >= 3 then
+  if used_count >= 2 then
     return query select false, false, 0, 'limit_reached'::text;
     return;
   end if;
@@ -106,7 +106,7 @@ begin
   return query select
     true,
     false,
-    greatest(0, 2 - used_count),
+    greatest(0, 1 - used_count),
     'free_credit'::text;
 end;
 $$;

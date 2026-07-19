@@ -8,7 +8,8 @@ sets an amount.
 ## Launch offer
 
 - One complete guest practice before account creation.
-- Three server-owned guided-practice credits after account creation.
+- Two server-owned guided-practice credits after account creation, for three
+  guided practices total when combined with the guest practice.
 - RizzCode Pro monthly: USD $14.99.
 - RizzCode Pro annual founding price: USD $99.99.
 - Paid coaching is presented as standard access subject to documented fair use,
@@ -60,6 +61,13 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 STRIPE_MONTHLY_PRICE_ID=price_...
 STRIPE_ANNUAL_PRICE_ID=price_...
 ```
+
+The standard browser-key name is
+`NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...`, but this build does not use or
+require it because the server redirects to Stripe-hosted Checkout. Add it only
+if RizzCode later embeds Stripe.js or Elements. A value beginning with
+`pk_live_` is never a secret key; `STRIPE_SECRET_KEY` must begin with
+`sk_test_` in a sandbox or `sk_live_` in live mode.
 
 Never paste `sk_...` or `whsec_...` into chat, source code, screenshots, logs,
 or commits. RizzCode's hosted Checkout flow does not need a Stripe publishable
