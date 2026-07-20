@@ -1306,7 +1306,8 @@
 }
 
 .rizz-composer button,
-.rizz-judge-error button {
+.rizz-judge-error button,
+.rizz-judge-error a {
   display: inline-flex;
   min-height: 48px;
   align-items: center;
@@ -1318,6 +1319,7 @@
   cursor: pointer;
   font-size: 11px;
   font-weight: 800;
+  text-decoration: none;
 }
 
 .rizz-composer .rizz-end-button {
@@ -1350,6 +1352,12 @@
   padding: 18px;
   border: 1px solid var(--oxblood);
   background: #f5d5c4;
+}
+
+.rizz-judge-error--upgrade {
+  border-color: var(--ink);
+  color: var(--ink);
+  background: var(--lime);
 }
 
 .rizz-judge-error p,

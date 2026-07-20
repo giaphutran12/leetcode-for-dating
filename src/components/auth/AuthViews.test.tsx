@@ -1,12 +1,13 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { LoginView, ResetPasswordView } from "./AuthViews";
+import { RizzCodeProvider } from "../../context/RizzCodeContext";
+import { AccountView, LoginView, ResetPasswordView } from "./AuthViews";
 
 const authMock = vi.hoisted(() => ({
   configured: true,
   loading: false,
   session: null as { access_token: string } | null,
-  user: null,
+  user: null as { email: string } | null,
   signInWithGoogle: vi.fn(),
   signIn: vi.fn(),
   signUp: vi.fn(),
@@ -18,6 +19,10 @@ const authMock = vi.hoisted(() => ({
 
 vi.mock("../../context/AuthContext", () => ({
   useAuth: () => authMock,
+}));
+
+vi.mock("../billing/BillingPanel", () => ({
+  BillingPanel: () => <div>Billing plans</div>,
 }));
 
 describe("auth views", () => {
@@ -96,5 +101,19 @@ describe("auth views", () => {
 
     expect(screen.getByRole("alert")).toHaveTextContent(/do not match/i);
     expect(authMock.updatePassword).not.toHaveBeenCalled();
+  });
+
+  it("keeps account actions focused on signing out", () => {
+    authMock.user = { email: "person@example.com" };
+    render(
+      <RizzCodeProvider>
+        <AccountView />
+      </RizzCodeProvider>,
+    );
+
+    expect(screen.getByRole("button", { name: "Log out" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Delete account" }),
+    ).not.toBeInTheDocument();
   });
 });

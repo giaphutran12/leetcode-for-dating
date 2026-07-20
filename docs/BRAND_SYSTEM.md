@@ -171,6 +171,7 @@ RizzCode is editorial, not bubbly.
 Motion should feel responsive and earned.
 
 - Fast feedback: 140 ms.
+- Activity hover feedback: 70 ms.
 - Standard transitions: 220 ms.
 - Large reveals: 420 ms.
 - Use the standard easing token.

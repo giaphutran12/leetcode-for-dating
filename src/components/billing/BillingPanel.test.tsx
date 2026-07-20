@@ -104,4 +104,25 @@ describe("billing panel", () => {
     fireEvent.click(manage);
     await waitFor(() => expect(createBillingPortal).toHaveBeenCalledOnce());
   });
+
+  it("tells a free user with zero credits to subscribe now", async () => {
+    const current = await loadBillingStatus();
+    if (!current || !current.ok) throw new Error("Expected free billing fixture.");
+    vi.mocked(loadBillingStatus).mockResolvedValue({
+      ...current,
+      freeCreditsUsed: 2,
+      freeCreditsRemaining: 0,
+    });
+
+    render(<BillingPanel />);
+
+    expect(
+      await screen.findByText(
+        "0 free unique practices left. Subscribe to keep training.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/subscribe when the free reps are done/i),
+    ).not.toBeInTheDocument();
+  });
 });

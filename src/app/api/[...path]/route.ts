@@ -130,7 +130,7 @@ export async function POST(
               retryable: false,
               code: "practice_limit_reached",
               message:
-                "Your free guided practices are complete. Pick a plan to keep training.",
+                "You used all your free training. Pick a plan to keep practicing.",
             };
             return json(result, 402);
           }

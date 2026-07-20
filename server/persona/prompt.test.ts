@@ -71,4 +71,10 @@ describe("persona prompt", () => {
       "exact non-question excerpt",
     );
   });
+
+  it("bans em dashes and fake fantasy metaphors", () => {
+    expect(PERSONA_SYSTEM_PROMPT).toContain("Do not use em dashes");
+    expect(PERSONA_SYSTEM_PROMPT).toContain("gremlin, gremlins");
+    expect(PERSONA_SYSTEM_PROMPT).toContain("goblin, or goblins");
+  });
 });

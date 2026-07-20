@@ -6,7 +6,7 @@ import type {
   HTMLAttributes,
   PropsWithChildren,
 } from "react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ActivityWeek } from "../domain/activity";
 
 type Intent = "primary" | "secondary" | "brand" | "lime" | "danger";
@@ -118,6 +118,11 @@ export function ActivityContributionGraph({
   ariaLabel?: string;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [tooltip, setTooltip] = useState<{
+    label: string;
+    left: number;
+    top: number;
+  }>();
 
   useEffect(() => {
     const viewport = scrollRef.current;
@@ -162,7 +167,15 @@ export function ActivityContributionGraph({
                   data-future={day.future}
                   data-level={day.level}
                   key={day.date}
-                  title={day.label}
+                  onMouseEnter={(event) => {
+                    const rect = event.currentTarget.getBoundingClientRect();
+                    setTooltip({
+                      label: day.label,
+                      left: rect.left + rect.width / 2,
+                      top: rect.top,
+                    });
+                  }}
+                  onMouseLeave={() => setTooltip(undefined)}
                 />
               )),
             )}
@@ -182,6 +195,15 @@ export function ActivityContributionGraph({
           <span>More</span>
         </div>
       </div>
+      {tooltip && (
+        <div
+          className="rc-activity-graph__tooltip"
+          role="tooltip"
+          style={{ left: tooltip.left, top: tooltip.top }}
+        >
+          {tooltip.label}
+        </div>
+      )}
     </div>
   );
 }

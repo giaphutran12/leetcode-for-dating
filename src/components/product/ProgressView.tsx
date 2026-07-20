@@ -4,7 +4,6 @@ import {
   Copy,
   Medal,
   Sparkle,
-  Trash,
 } from "@phosphor-icons/react";
 import { useState } from "react";
 import {
@@ -36,7 +35,6 @@ export function ProgressView() {
     activity,
     milestones,
     toggleMilestone,
-    resetProgress,
   } = useRizzCode();
   const [copied, setCopied] = useState(false);
   const quest = getSideQuest(profile.onboardingPlan.sideQuestId);
@@ -55,24 +53,6 @@ export function ProgressView() {
     <ProductShell
       eyebrow="Your progress"
       title="Receipts over vibes."
-      actions={
-        <button
-          className="rizz-text-button rizz-text-button--danger"
-          type="button"
-          onClick={() => {
-            if (
-              window.confirm(
-                "Reset all RizzCode progress on this device and synced account?",
-              )
-            ) {
-              resetProgress();
-            }
-          }}
-        >
-          <Trash size={18} />
-          Reset progress
-        </button>
-      }
     >
       <section className="rizz-progress-hero">
         <div>

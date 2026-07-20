@@ -31,6 +31,7 @@ import {
   ModeBadge,
   ProductShell,
 } from "./ProductShell";
+import { resultVoice } from "./resultVoice";
 
 type Receipt = {
   xpDelta: number;
@@ -60,6 +61,7 @@ function ResultView({
 }) {
   const { profile, progress } = useRizzCode();
   const next = nextPracticeScenario(progress, profile);
+  const voice = resultVoice(result);
   return (
     <section
       className="rizz-result"
@@ -68,15 +70,9 @@ function ResultView({
     >
       <header className="rizz-result__hero">
         <div>
-          <p className="rizz-kicker">Official LLM judgment</p>
+          <p className="rizz-kicker">{voice.kicker}</p>
           <h2 id="result-title">{result.verdict}</h2>
-          <p>
-            {result.verdict === "ATE"
-              ? "That had a pulse. Specific, calibrated, and actually fun."
-              : result.verdict === "COOKED"
-                ? "There is a real thread here. A little less autopilot and you are dangerous."
-                : "The moment got away from you. Good news: this is exactly why the rep exists."}
-          </p>
+          <p>{voice.summary}</p>
         </div>
         <div className="rizz-score-disc">
           <strong>{result.finalScore}</strong>
@@ -90,7 +86,7 @@ function ResultView({
           <div>
             <strong>
               {result.hardGate.severity === "stop"
-                ? "Stop-level boundary"
+                ? "Hard stop"
                 : "Score capped at 4"}
             </strong>
             {result.hardGate.evidence.map((evidence) => (
@@ -103,8 +99,8 @@ function ResultView({
       )}
 
       <div className="rizz-result__grid">
-        <section className="rizz-rubric" aria-label="Five-part rubric">
-          <h3>Five-part rubric</h3>
+        <section className="rizz-rubric" aria-label="Five-part score replay">
+          <h3>{voice.rubricTitle}</h3>
           {result.rubric.map((item) => (
             <article key={item.id}>
               <div>
@@ -129,7 +125,7 @@ function ResultView({
 
         <div className="rizz-coaching">
           <article>
-            <h3>What worked</h3>
+            <h3>{voice.workedTitle}</h3>
             <ul>
               {result.worked.map((item) => (
                 <li key={item}>{item}</li>
@@ -137,7 +133,7 @@ function ResultView({
             </ul>
           </article>
           <article>
-            <h3>What to improve</h3>
+            <h3>{voice.improveTitle}</h3>
             <ul>
               {result.improve.map((item) => (
                 <li key={item}>{item}</li>
@@ -145,11 +141,11 @@ function ResultView({
             </ul>
           </article>
           <article className="rizz-better-response">
-            <h3>A stronger response</h3>
+            <h3>{voice.betterTitle}</h3>
             <p>“{result.betterResponse}”</p>
           </article>
           <article className="rizz-outcome">
-            <span>Likely simulated outcome</span>
+            <span>{voice.outcomeEyebrow}</span>
             <h3>{result.outcome.label}</h3>
             <p>
               {result.outcome.basis[0]?.reason} Confidence:{" "}
@@ -166,7 +162,7 @@ function ResultView({
             <strong>+{receipt?.xpDelta ?? 0} practice XP</strong>
             {receipt?.isPersonalBest
               ? "New personal best."
-              : "Only improvement earns more mastery XP."}
+              : voice.masteryHint}
           </span>
         </div>
         {receipt?.unlockedAchievements.map((achievement) => (
@@ -178,10 +174,10 @@ function ResultView({
         <div className="rizz-result__actions">
           <button type="button" onClick={retry}>
             <ArrowCounterClockwise size={18} />
-            Retry scenario
+            {voice.retryLabel}
           </button>
           <a href={`/practice/${next.id}`}>
-            Next challenge
+            {voice.nextLabel}
             <ArrowRight size={18} />
           </a>
         </div>
@@ -222,7 +218,7 @@ export function PracticeView({ scenario }: { scenario: Scenario }) {
               </span>
               <span>
                 <Clock size={18} />
-                3–6 adaptive turns
+                3-6 adaptive turns
               </span>
             </div>
           </div>
@@ -301,6 +297,8 @@ export function PracticeView({ scenario }: { scenario: Scenario }) {
   };
   const personaError =
     Boolean(attempt.error) && !attempt.error?.code.startsWith("judge_");
+  const practiceLimitReached =
+    attempt.error?.code === "practice_limit_reached";
   const canRetryError = attempt.error?.retryable !== false;
 
   return (
@@ -428,11 +426,20 @@ export function PracticeView({ scenario }: { scenario: Scenario }) {
           )}
 
           {attempt.status === "error" ? (
-            <div className="rizz-judge-error" role="alert">
-              <WarningCircle size={26} weight="fill" />
+            <div
+              className={`rizz-judge-error${practiceLimitReached ? " rizz-judge-error--upgrade" : ""}`}
+              role={practiceLimitReached ? "status" : "alert"}
+            >
+              {practiceLimitReached ? (
+                <Lightning size={26} weight="fill" />
+              ) : (
+                <WarningCircle size={26} weight="fill" />
+              )}
               <div>
                 <strong>
-                  {personaError
+                  {practiceLimitReached
+                    ? "Free training complete."
+                    : personaError
                     ? "Reaction did not land."
                     : judgeErrorTitles[
                         attempt.error?.code as JudgeErrorCode
@@ -442,15 +449,19 @@ export function PracticeView({ scenario }: { scenario: Scenario }) {
                 {!personaError && attempt.error && (
                   <small>Error code: {attempt.error.code}</small>
                 )}
-                <span>
-                  {personaError && canRetryError
-                    ? "Your line is preserved. Retry the same turn or reset."
-                    : personaError
-                      ? "This conversation fell out of sync. Reset the attempt to continue."
-                    : "No score or XP was awarded. Your transcript is preserved."}
-                </span>
+                {!practiceLimitReached && (
+                  <span>
+                    {personaError && canRetryError
+                      ? "Your line is preserved. Retry the same turn or reset."
+                      : personaError
+                        ? "This conversation fell out of sync. Reset the attempt to continue."
+                        : "No score or XP was awarded. Your transcript is preserved."}
+                  </span>
+                )}
               </div>
-              {canRetryError && (
+              {practiceLimitReached ? (
+                <a href="/account">See plans</a>
+              ) : canRetryError ? (
                 <button
                   type="button"
                   onClick={
@@ -461,7 +472,7 @@ export function PracticeView({ scenario }: { scenario: Scenario }) {
                 >
                   {personaError ? "Retry reaction" : "Retry judgment"}
                 </button>
-              )}
+              ) : null}
             </div>
           ) : (
             <form className="rizz-composer" onSubmit={session.submit}>

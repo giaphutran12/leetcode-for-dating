@@ -76,6 +76,7 @@
   --rc-shadow-float: 0 6px 24px rgba(23, 22, 18, 0.24);
 
   --rc-duration-fast: 140ms;
+  --rc-duration-tooltip: 70ms;
   --rc-duration-base: 220ms;
   --rc-duration-slow: 420ms;
   --rc-ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -90,6 +91,7 @@
 @media (prefers-reduced-motion: reduce) {
   :root {
     --rc-duration-fast: 0ms;
+    --rc-duration-tooltip: 0ms;
     --rc-duration-base: 0ms;
     --rc-duration-slow: 0ms;
   }

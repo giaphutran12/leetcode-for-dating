@@ -56,6 +56,13 @@ The judge server:
 11. Recalculates raw score, caps, final score, and verdict.
 12. Leaves XP calculation to the application domain.
 
+The result surface keeps those receipts and calculations unchanged while
+presenting the coaching in RizzCode's own voice. Labels stay literal and easy
+to scan, including `What worked`, `What to improve`, and `A better response`.
+The judge prompt asks for short sentences, common words, restrained Gen Z
+slang inside the feedback, realistic replacement messages, no corporate or
+therapist filler, and no jokes around boundary violations.
+
 Before the provider call, the server claims a transcript-bound attempt ID in
 `public.rizzcode_judgments`. Concurrent duplicates return a typed in-progress state.
 A completed duplicate reuses the persisted, revalidated result without another model

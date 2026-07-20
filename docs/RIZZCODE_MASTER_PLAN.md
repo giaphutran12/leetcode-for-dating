@@ -1293,9 +1293,12 @@ The exact routing library is an implementation choice, but these views must exis
    - Verdict
    - Five criteria scored out of 2
    - Evidence
+   - Simple coaching written like a sharp Gen Z friend
+   - Short sentences and common words
+   - Light slang inside feedback, never in place of clear labels
    - What worked
    - What to improve
-   - Better response
+   - A realistic better response
    - Likely simulated outcome
    - XP and personal best
    - Retry and next challenge

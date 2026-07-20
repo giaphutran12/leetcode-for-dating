@@ -129,20 +129,37 @@ export const fixtureJudgeProvider: JudgeProvider = {
       "respect_calibration",
       "challenge_objective",
     ];
+    const feedback: Record<
+      JudgeModelDraft["rubric"][number]["id"],
+      string
+    > = {
+      context_naturalness:
+        "This stays on the same topic instead of forcing a new one.",
+      reciprocity_listening:
+        "You shared something too, so it felt like a real back-and-forth.",
+      playfulness_personality:
+        "The line feels human instead of copied.",
+      respect_calibration:
+        hardGate.triggered
+          ? "This crossed the boundary, so the rep stops here."
+          : "You matched the energy without forcing the interaction.",
+      challenge_objective:
+        "You did what the challenge asked and kept the chat going.",
+    };
 
     return {
       rubric: ids.map((id) => ({
         id,
         score: fixtureScore(id, evidenceMessage.body, scenario, hardGate),
         evidence,
-        feedback: `The response gives concrete evidence for ${id.replaceAll("_", " ")}.`,
+        feedback: feedback[id],
       })),
-      worked: ["You gave the other person something concrete to respond to."],
-      improve: ["Keep the next line concise and matched to the energy you receive."],
+      worked: ["You gave them an easy thing to reply to. That worked."],
+      improve: ["Make the next line shorter and match their energy."],
       betterResponse:
         scenario.mode === "in_person"
-          ? "That detail made me curious. What is the short version?"
-          : "That detail got me. What happened next?",
+          ? "Okay, that detail got me. What is the short version?"
+          : "okay that detail got me 😭 what happened next?",
       outcome: {
         code: outcomeCode,
         label: outcomeCode.replaceAll("_", " "),

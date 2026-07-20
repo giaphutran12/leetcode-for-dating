@@ -35,6 +35,12 @@ const stopPatterns: Array<{
     reason: "Directed sexual pressure is a stop-level violation.",
   },
   {
+    code: "directed_sexual_comment",
+    pattern:
+      /\b(?:goon(?:ing)? (?:to|over) (?:u|you)|(?:i(?:'m| am)? )?(?:just |lowk )?(?:wanna|want to|tryna|trying to) (?:lick|eat) (?:your|ur) (?:puss(?:y)?|vagina|ass))\b/i,
+    reason: "A directed sexual comment ends the practice.",
+  },
+  {
     code: "private_information",
     pattern: /\b(i found your address|i know where you live|tracked your location)\b/i,
     reason: "Private information cannot be used to pressure or frighten someone.",

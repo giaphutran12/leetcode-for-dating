@@ -8,6 +8,7 @@ import { ZodError } from "zod";
 import { getScenario } from "../../src/data/scenarios";
 import { MIN_CONVERSATION_TURNS } from "../../src/domain/constants";
 import { detectHardGates, finalizeJudgeResult } from "../../src/domain/scoring";
+import { cleanJudgeCopy } from "../../src/domain/modelCopy";
 import type {
   Attempt,
   JudgeApiResponse,
@@ -346,12 +347,14 @@ export async function judgeAttempt(
     let draft: JudgeModelDraft | undefined;
     try {
       const abortSignal = AbortSignal.timeout(18_000);
-      draft = await provider.evaluate({
-        scenario,
-        attempt,
-        hardGate,
-        abortSignal,
-      });
+      draft = cleanJudgeCopy(
+        await provider.evaluate({
+          scenario,
+          attempt,
+          hardGate,
+          abortSignal,
+        }),
+      );
       let result;
       try {
         result = finalizeJudgeResult({
