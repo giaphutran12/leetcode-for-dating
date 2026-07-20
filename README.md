@@ -258,9 +258,11 @@ It prints only pass or failure metadata, never the credential or transcript.
 - `server/runtime.ts` selects production or non-production test providers
   without exposing environment variables to the client.
 - `server/judge/provider.ts` is the only production provider path.
-- `server/judge/service.ts` requires the server-owned conversation, runs hard
-  gates, invokes the separate judge provider, validates evidence and outcomes,
-  recalculates scores, applies caps, and derives the verdict.
+- `server/judge/service.ts` requires the server-owned conversation, invokes the
+  separate judge provider, validates exact evidence, safety consistency, and
+  scenario outcome codes, recalculates scores, applies caps, and derives the
+  verdict. The judge model owns normal-language safety and outcome
+  classification; server code does not reclassify either with phrase lists.
 - `src/engine/conversationEngine.ts` owns client-visible attempt transitions,
   action rendering, delivery states, and authored fallback behavior.
 - `src/domain/` owns pure scoring, XP, onboarding, validation, and next-rep

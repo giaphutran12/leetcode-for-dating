@@ -11,7 +11,6 @@ import type {
   PersonaReply,
   PersonaRequest,
 } from "../../src/domain/types";
-import { detectHardGates } from "../../src/domain/scoring";
 import { cleanModelCopy } from "../../src/domain/modelCopy";
 import {
   authoredFallbackReply,
@@ -197,36 +196,6 @@ type PersonaRequestContext = {
   userId?: string;
   logProviderFailure?: boolean;
 };
-
-function stopLevelReply(current: PersonaReply["state"]): PersonaReply {
-  const policyState = normalizePersonaState(current);
-  const body = "No. That's disrespectful. Don't contact me again.";
-  const nextPolicyState = advancePersonaPolicyState({
-    current: policyState,
-    move: "close",
-    text: body,
-    energyChange: "down",
-  });
-  return {
-    actions: [
-      {
-        kind: "text",
-        body,
-        delayMs: 420,
-      },
-    ],
-    move: "close",
-    interestChange: "down",
-    state: {
-      ...policyState,
-      ...nextPolicyState,
-      engagement: "closed",
-      boundary: "explicit",
-      terminal: true,
-    },
-    terminalReason: "boundary",
-  };
-}
 
 export class PersonaService {
   private readonly inFlight = new Map<
@@ -506,14 +475,6 @@ export class PersonaService {
     let reply: PersonaReply;
     let usedFallback = false;
     const incomingAttempt = beginTurn(attempt, request.body);
-    if (detectHardGates(incomingAttempt).severity === "stop") {
-      return {
-        turn: request.turn,
-        body: request.body,
-        reply: stopLevelReply(attempt.personaState),
-        usedFallback: false,
-      };
-    }
     try {
       if (
         !process.env.OPENAI_API_KEY &&

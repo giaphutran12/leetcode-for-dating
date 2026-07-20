@@ -57,10 +57,6 @@ export interface PersonaDefinition {
 }
 
 export interface ScenarioFallbackGraph {
-  positiveSignals: string[];
-  lowInterestSignals: string[];
-  boundarySignals: string[];
-  exitSignals: string[];
   repliesByTurn: Record<1 | 2 | 3, Record<Engagement, string>>;
 }
 
@@ -165,6 +161,12 @@ export interface JudgeResult {
 }
 
 export interface JudgeModelDraft {
+  safety: {
+    severity: "none" | "cap" | "stop";
+    confidence: "low" | "medium" | "high";
+    codes: string[];
+    evidence: Evidence[];
+  };
   rubric: RubricResult[];
   worked: string[];
   improve: string[];

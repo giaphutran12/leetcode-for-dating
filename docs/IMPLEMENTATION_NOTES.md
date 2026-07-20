@@ -44,17 +44,22 @@ The judge server:
 1. Parses a strict request schema and rejects extra authority fields.
 2. Loads the canonical scenario.
 3. Requires an exact match with the server-owned adaptive conversation.
-4. Detects hard gates before the provider call.
-5. Calls the separate `gpt-5.6-luna` judge through Vercel AI SDK v6.
-6. Requires atomic structured output through `generateText()` and
+4. Calls the separate `gpt-5.6-luna` judge through Vercel AI SDK v6.
+5. Requires atomic structured output through `generateText()` and
    `Output.object()`.
-7. Verifies five unique criteria and exact user-turn excerpts.
-8. Rejects unsupported outcome claims.
-9. Forces stop-level transcripts to the server-owned `boundary_crossed`
+6. Verifies five unique criteria and exact user-turn excerpts.
+7. Rejects malformed output and outcome codes unavailable to the scenario.
+8. Lets the judge model classify safety from the full canonical transcript,
+   without keyword lists or regex phrase matching.
+9. Validates safety-field consistency and derives the score cap from the
+   structured severity. A stop is enforced only when the model reports high
+   confidence; lower-confidence stop classifications are reduced to a cap.
+10. Forces model-classified stop-level transcripts to the server-owned `boundary_crossed`
    outcome even if the model proposes a more favorable outcome.
-10. Confirms contact and date agreement match the persona's actual reply.
-11. Recalculates raw score, caps, final score, and verdict.
-12. Leaves XP calculation to the application domain.
+11. Leaves normal-language outcome classification to the judge model using the
+    full canonical transcript. No keyword list or phrase matcher reclassifies it.
+12. Recalculates raw score, caps, final score, and verdict.
+13. Leaves XP calculation to the application domain.
 
 The result surface keeps those receipts and calculations unchanged while
 presenting the coaching in RizzCode's own voice. Labels stay literal and easy
@@ -162,7 +167,7 @@ See [PRACTICE_ACTIVITY.md](PRACTICE_ACTIVITY.md).
 
 Vitest covers domain rules, all 67 adaptive scenarios, persona preparation and
 idempotency, stale-draft rejection, preparation cost caps, delivery-state
-monotonicity, hard gates, exact evidence, server-owned arithmetic, outcome
+monotonicity, model-classified safety gates, exact evidence, server-owned arithmetic, outcome
 acceptance, XP anti-farming, open scenario access, corrupt storage, storage
 failure, mode-specific UI, onboarding skip, provider failure, malformed output,
 signed-receipt tamper rejection, process-memory loss between turns, and the

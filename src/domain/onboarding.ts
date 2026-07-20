@@ -15,6 +15,25 @@ const connectionIds = scenarios
   .filter((scenario) => scenario.module === "connection")
   .map((scenario) => scenario.id);
 
+const connectionGoals = new Set([
+  "Improve texting",
+  "Ask someone out",
+  "Get more dates",
+  "Become more relationship-ready",
+]);
+
+const sparkScenarioByGoal: Record<string, string> = {
+  "Talk naturally": "RC-001",
+  "Become funnier": "RC-004",
+};
+
+const connectionScenarioByGoal: Record<string, string> = {
+  "Improve texting": "RC-035",
+  "Ask someone out": "RC-040",
+  "Get more dates": "RC-040",
+  "Become more relationship-ready": "RC-051",
+};
+
 function prioritize(
   ids: string[],
   preferredId: string | undefined,
@@ -26,34 +45,21 @@ function prioritize(
 export function buildOnboardingPlan(
   answers: OnboardingAnswers,
 ): OnboardingPlan {
-  const combined = [...answers.goals, answers.struggles]
-    .join(" ")
-    .toLowerCase();
-  const startingModule =
-    /text|relationship|follow|reply|date plan|connection/.test(combined)
-      ? "connection"
-      : "spark";
-  const wantsPlayfulness = /fun|funny|humor|boring/.test(combined);
-  const wantsReliability = /relationship|follow|ready|disappear/.test(combined);
-  const flavor = answers.typeDescription.toLowerCase();
-  const sparkPreference = /book|quiet|cafe|coffee|reader/.test(flavor)
-    ? "RC-002"
-    : /tech|build|developer|project|nerd/.test(flavor)
-      ? "RC-004"
-      : /social|outgoing|party|group/.test(flavor)
-        ? "RC-005"
-        : undefined;
-  const connectionPreference = /cook|food|vietnamese/.test(flavor)
-    ? "RC-035"
-    : /plant|playful|joke/.test(flavor)
-      ? "RC-023"
-      : /date|plan|direct/.test(combined)
-        ? "RC-040"
-        : /awkward|repair|apolog/.test(combined)
-          ? "RC-044"
-          : /reject|low interest|mismatch/.test(combined)
-            ? "RC-051"
-            : undefined;
+  const startingModule = answers.goals.some((goal) =>
+    connectionGoals.has(goal),
+  )
+    ? "connection"
+    : "spark";
+  const wantsPlayfulness = answers.goals.includes("Become funnier");
+  const wantsReliability = answers.goals.includes(
+    "Become more relationship-ready",
+  );
+  const sparkPreference = answers.goals
+    .map((goal) => sparkScenarioByGoal[goal])
+    .find(Boolean);
+  const connectionPreference = answers.goals
+    .map((goal) => connectionScenarioByGoal[goal])
+    .find(Boolean);
   const personalizedSparkIds = prioritize(sparkIds, sparkPreference);
   const personalizedConnectionIds = prioritize(
     connectionIds,

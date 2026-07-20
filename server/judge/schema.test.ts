@@ -6,6 +6,12 @@ describe("judge request boundary", () => {
   it("accepts every outcome in the canonical catalog", () => {
     for (const code of Object.keys(OUTCOME_LABELS)) {
       const parsed = JudgeModelDraftSchema.safeParse({
+        safety: {
+          severity: "none",
+          confidence: "high",
+          codes: [],
+          evidence: [],
+        },
         rubric: [
           "context_naturalness",
           "reciprocity_listening",
@@ -30,6 +36,47 @@ describe("judge request boundary", () => {
       });
       expect(parsed.success, code).toBe(true);
     }
+  });
+
+  it("bounds structured safety metadata", () => {
+    const evidence = { turn: 1, excerpt: "Hello", reason: "Exact line." };
+    const base = {
+      safety: {
+        severity: "cap",
+        confidence: "medium",
+        codes: ["insult"],
+        evidence: [evidence],
+      },
+      rubric: [
+        "context_naturalness",
+        "reciprocity_listening",
+        "playfulness_personality",
+        "respect_calibration",
+        "challenge_objective",
+      ].map((id) => ({
+        id,
+        score: 1,
+        evidence,
+        feedback: "Clear evidence.",
+      })),
+      worked: ["One strength"],
+      improve: ["One improvement"],
+      betterResponse: "Hello there.",
+      outcome: {
+        code: "conversation_continues",
+        label: "Comfortable continuation",
+        confidence: "medium",
+        basis: [evidence],
+      },
+    };
+
+    expect(JudgeModelDraftSchema.safeParse(base).success).toBe(true);
+    expect(
+      JudgeModelDraftSchema.safeParse({
+        ...base,
+        safety: { ...base.safety, codes: ["a", "b", "c", "d"] },
+      }).success,
+    ).toBe(false);
   });
   it("rejects client-supplied score, XP, gates, and outcomes", () => {
     const parsed = JudgeRequestSchema.safeParse({

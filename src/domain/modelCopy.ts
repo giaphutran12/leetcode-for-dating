@@ -20,6 +20,10 @@ function cleanEvidenceReason(evidence: Evidence): Evidence {
 export function cleanJudgeCopy(draft: JudgeModelDraft): JudgeModelDraft {
   return {
     ...draft,
+    safety: {
+      ...draft.safety,
+      evidence: draft.safety.evidence.map(cleanEvidenceReason),
+    },
     rubric: draft.rubric.map((item) => ({
       ...item,
       evidence: cleanEvidenceReason(item.evidence),

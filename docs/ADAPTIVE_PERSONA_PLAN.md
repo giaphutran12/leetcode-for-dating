@@ -140,7 +140,8 @@ The judge:
 - reads the server-owned persona transcript
 - cites exact excerpts only from user turns
 - preserves the five-part rubric and deterministic arithmetic
-- keeps hard-gate detection server-side
+- lets the judge model classify safety from the full transcript while the
+  server enforces evidence, caps, and arithmetic
 - cannot accept client-supplied persona state, replies, scores, gates, outcomes, or XP
 
 ## Verification

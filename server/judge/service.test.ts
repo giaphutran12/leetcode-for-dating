@@ -105,6 +105,18 @@ describe("judge service integration", () => {
   });
 
   it("scores a graceful early exit fairly", async () => {
+    const gracefulProvider: JudgeProvider = {
+      async evaluate(input) {
+        const draft = await fixtureJudgeProvider.evaluate(input);
+        return {
+          ...draft,
+          outcome: {
+            ...draft.outcome,
+            code: "graceful_exit",
+          },
+        };
+      },
+    };
     const response = await judgeStoredAttempt(
       {
         schemaVersion: "1.0",
@@ -117,6 +129,7 @@ describe("judge service integration", () => {
           },
         ],
       },
+      gracefulProvider,
     );
     expect(response.ok).toBe(true);
     if (!response.ok) return;
@@ -124,7 +137,36 @@ describe("judge service integration", () => {
     expect(response.result.finalScore).toBeGreaterThanOrEqual(7);
   });
 
-  it("applies stop and cap gates around the model draft", async () => {
+  it("applies model-classified stop and cap gates around the draft", async () => {
+    const safetyProvider = (
+      severity: "stop" | "cap",
+      code: string,
+    ): JudgeProvider => ({
+      async evaluate(input) {
+        const draft = await fixtureJudgeProvider.evaluate(input);
+        const message = input.attempt.messages.find(
+          (item) => item.speaker === "you",
+        );
+        if (!message || message.turn === 0) {
+          throw new Error("Safety fixture requires user evidence.");
+        }
+        return {
+          ...draft,
+          safety: {
+            severity,
+            confidence: "high",
+            codes: [code],
+            evidence: [
+              {
+                turn: message.turn,
+                excerpt: message.body,
+                reason: "The judge model classified the safety impact from context.",
+              },
+            ],
+          },
+        };
+      },
+    });
     const stop = await judgeStoredAttempt(
       {
         schemaVersion: "1.0",
@@ -137,6 +179,7 @@ describe("judge service integration", () => {
           },
         ],
       },
+      safetyProvider("stop", "continued_after_refusal"),
     );
     expect(stop.ok).toBe(true);
     if (stop.ok) {
@@ -158,6 +201,7 @@ describe("judge service integration", () => {
           { turn: 3, body: "What do you usually order?" },
         ],
       },
+      safetyProvider("cap", "insult_or_negging"),
     );
     expect(cap.ok).toBe(true);
     if (cap.ok) {
@@ -166,7 +210,7 @@ describe("judge service integration", () => {
     }
   });
 
-  it("does not obey prompt injection or reuse one fixed result", async () => {
+  it("keeps the mock provider non-semantic instead of classifying phrases", async () => {
     const injection = await judgeStoredAttempt(
       {
         schemaVersion: "1.0",
@@ -183,8 +227,10 @@ describe("judge service integration", () => {
     expect(injection.ok).toBe(true);
     expect(strong.ok).toBe(true);
     if (injection.ok && strong.ok) {
-      expect(injection.result.finalScore).not.toBe(10);
-      expect(injection.result.finalScore).not.toBe(strong.result.finalScore);
+      expect(injection.result.finalScore).toBe(strong.result.finalScore);
+      expect(injection.result.outcome.code).toBe(
+        strong.result.outcome.code,
+      );
     }
   });
 
@@ -215,54 +261,6 @@ describe("judge service integration", () => {
       expect(response.result.finalScore).toBeGreaterThanOrEqual(8);
       expect(response.result.finalScore).toBeLessThanOrEqual(10);
     }
-  });
-
-  it("keeps a safe generic one-word response at five or below", async () => {
-    const response = await judgeStoredAttempt(
-      {
-        schemaVersion: "1.0",
-        attemptId: "attempt-generic",
-        scenarioId: "RC-001",
-        responses: [
-          { turn: 1, body: "Okay" },
-          { turn: 2, body: "Okay" },
-          { turn: 3, body: "Okay" },
-        ],
-      },
-    );
-    expect(response.ok).toBe(true);
-    if (response.ok) expect(response.result.finalScore).toBeLessThanOrEqual(5);
-  });
-
-  it("penalizes a long in-person speech on context and naturalness", async () => {
-    const response = await judgeStoredAttempt(
-      {
-        schemaVersion: "1.0",
-        attemptId: "attempt-speech",
-        scenarioId: "RC-001",
-        responses: [
-          {
-            turn: 1,
-            body: "I have spent several years developing a comprehensive philosophy of spontaneous human connection, and I would like to explain all of its premises before learning anything about this moment.",
-          },
-          {
-            turn: 2,
-            body: "There are several additional premises that I have not yet had time to enumerate.",
-          },
-          {
-            turn: 3,
-            body: "My conclusion will follow after a final extended explanation.",
-          },
-        ],
-      },
-    );
-    expect(response.ok).toBe(true);
-    if (!response.ok) return;
-    expect(
-      response.result.rubric.find(
-        (item) => item.id === "context_naturalness",
-      )?.score,
-    ).toBeLessThan(2);
   });
 
   it("never produces contact exchange after clear low interest", async () => {
@@ -327,6 +325,12 @@ describe("judge service integration", () => {
     const malformedProvider: JudgeProvider = {
       async evaluate() {
         return {
+          safety: {
+            severity: "none",
+            confidence: "high",
+            codes: [],
+            evidence: [],
+          },
           rubric: [],
           worked: ["Nope"],
           improve: ["Nope"],

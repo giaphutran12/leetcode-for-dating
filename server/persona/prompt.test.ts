@@ -77,4 +77,16 @@ describe("persona prompt", () => {
     expect(PERSONA_SYSTEM_PROMPT).toContain("gremlin, gremlins");
     expect(PERSONA_SYSTEM_PROMPT).toContain("goblin, or goblins");
   });
+
+  it("keeps ambiguous sexual wording open unless pressure is clear", () => {
+    expect(PERSONA_SYSTEM_PROMPT).toContain(
+      "Sexual wording or a sexual suggestion alone is not automatically pressure",
+    );
+    expect(PERSONA_SYSTEM_PROMPT).toContain(
+      "Give ambiguous wording the benefit of the doubt",
+    );
+    expect(PERSONA_SYSTEM_PROMPT).toContain(
+      "When harmful intent is clear",
+    );
+  });
 });

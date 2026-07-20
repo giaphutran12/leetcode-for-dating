@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { getScenario } from "../../src/data/scenarios";
-import { detectHardGates } from "../../src/domain/scoring";
 import { attemptFromResponses } from "../../src/engine/conversationEngine";
 import { JUDGE_SYSTEM_PROMPT, buildJudgePrompt } from "./prompt";
 
@@ -12,11 +11,7 @@ describe("judge prompt evidence authority", () => {
       [{ turn: 1, body: "That ramen tote is elite." }],
       "attempt-prompt",
     );
-    const prompt = buildJudgePrompt(
-      scenario,
-      attempt,
-      detectHardGates(attempt),
-    );
+    const prompt = buildJudgePrompt(scenario, attempt);
 
     expect(JUDGE_SYSTEM_PROMPT).toContain(
       'Every outcome.basis entry must also cite an exact',
@@ -25,7 +20,20 @@ describe("judge prompt evidence authority", () => {
       'Never cite a persona "her" turn',
     );
     expect(prompt).toContain(
-      'Copy every rubric and outcome-basis excerpt only from a "you" message.',
+      'Copy every rubric, safety, and outcome-basis excerpt only from a "you" message.',
+    );
+    expect(JUDGE_SYSTEM_PROMPT).toContain(
+      "You own the semantic judgment.",
+    );
+    expect(prompt).toContain(
+      "Infer safety and outcome from the full transcript, not canned keywords.",
+    );
+    expect(prompt).not.toContain("deterministicHardGateContext");
+    expect(JUDGE_SYSTEM_PROMPT).toContain(
+      "Sexual language or a sexual suggestion is not automatically pressure.",
+    );
+    expect(JUDGE_SYSTEM_PROMPT).toContain(
+      "ambiguous language the benefit of the doubt.",
     );
   });
 

@@ -19,35 +19,6 @@ import {
   personaTextHasQuestion,
 } from "./personaPolicy";
 
-function normalize(value: string): string {
-  return value
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[’']/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-export function matchesSignal(input: string, signal: string): boolean {
-  const normalizedInput = normalize(input);
-  const normalizedSignal = normalize(signal);
-
-  if (!normalizedSignal) {
-    return false;
-  }
-
-  const pattern = new RegExp(
-    `(?:^|[^a-z0-9])${escapeRegExp(normalizedSignal)}(?:$|[^a-z0-9])`,
-    "i",
-  );
-  return pattern.test(normalizedInput);
-}
-
 export function validateResponse(body: string):
   | { ok: true; body: string }
   | { ok: false; reason: "empty" | "too_long" } {
