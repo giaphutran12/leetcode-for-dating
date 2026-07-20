@@ -38,7 +38,10 @@ describe("billing checkout route", () => {
       email: "person@example.com",
     });
     mocks.createBillingAdminClient.mockReturnValue({});
-    mocks.getBillingStatus.mockResolvedValue({ paid: false });
+    mocks.getBillingStatus.mockResolvedValue({
+      paid: false,
+      accessLevel: "free",
+    });
     mocks.getOrCreateStripeCustomer.mockResolvedValue("cus_test");
     mocks.resolveStripePlan.mockImplementation(
       async (_stripe: unknown, plan: string) => ({
@@ -90,7 +93,10 @@ describe("billing checkout route", () => {
   });
 
   it("does not create another checkout for an active subscriber", async () => {
-    mocks.getBillingStatus.mockResolvedValue({ paid: true });
+    mocks.getBillingStatus.mockResolvedValue({
+      paid: true,
+      accessLevel: "subscription",
+    });
     const response = await POST(
       new Request("https://rizzcode.example/api/billing/checkout", {
         method: "POST",
@@ -98,6 +104,24 @@ describe("billing checkout route", () => {
       }),
     );
     expect(response.status).toBe(409);
+    expect(mocks.checkoutCreate).not.toHaveBeenCalled();
+  });
+
+  it("does not create a checkout for a database-granted admin", async () => {
+    mocks.getBillingStatus.mockResolvedValue({
+      paid: false,
+      accessLevel: "admin",
+    });
+    const response = await POST(
+      new Request("https://rizzcode.example/api/billing/checkout", {
+        method: "POST",
+        body: JSON.stringify({ plan: "monthly" }),
+      }),
+    );
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({
+      code: "access_already_active",
+    });
     expect(mocks.checkoutCreate).not.toHaveBeenCalled();
   });
 });

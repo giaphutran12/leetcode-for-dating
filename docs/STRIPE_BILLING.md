@@ -75,6 +75,36 @@ Never paste `sk_...` or `whsec_...` into chat, source code, screenshots, logs,
 or commits. RizzCode's hosted Checkout flow does not need a Stripe publishable
 key in the browser.
 
+## Database access grants
+
+Owner and admin access is independent from Stripe. The migration
+`20260720134907_database_access_grants.sql` creates a private grant table and
+updates the server-only practice claim function. A grant is keyed to the stable
+Supabase Auth user UUID:
+
+```sql
+insert into private.rizzcode_access_grants (
+  user_id,
+  access_level,
+  reason
+) values (
+  'USER_UUID',
+  'admin',
+  'Approved admin access'
+)
+on conflict (user_id) do update
+set
+  access_level = excluded.access_level,
+  reason = excluded.reason,
+  expires_at = null,
+  updated_at = now();
+```
+
+Remove access by deleting that user's row. Neither operation creates or updates
+a Stripe customer, subscription, invoice, or revenue record. Run grant changes
+only through a trusted database administration path; browser roles have no
+access to the private table or its server-only lookup function.
+
 ## Changing the price
 
 Stripe Price amounts are immutable. To change what new subscribers pay:
@@ -97,7 +127,10 @@ subscribers remain on their original Price until they are deliberately migrated.
    one of three unique free practices. Synced guest progress counts toward the
    same limit.
 5. Active or trialing subscriptions bypass the free-credit limit.
-6. Cancelled or unpaid subscriptions stop bypassing the limit after Stripe
+6. A server-owned database access grant can unlock an admin account without
+   creating a Stripe customer or subscription. Grants are keyed by the
+   Supabase Auth user UUID and managed only through trusted database operations.
+7. Cancelled or unpaid subscriptions stop bypassing the limit after Stripe
    updates the stored subscription status.
 
 The billing tables are server-only. Browser clients receive no direct grants,

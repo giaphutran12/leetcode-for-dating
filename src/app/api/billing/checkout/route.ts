@@ -41,12 +41,12 @@ export async function POST(request: Request) {
     const stripe = createStripeClient();
     const client = createBillingAdminClient();
     const status = await getBillingStatus(client, user.id);
-    if (status.paid) {
+    if (status.accessLevel !== "free") {
       return json(
         {
           ok: false,
-          code: "already_subscribed",
-          message: "This account already has an active subscription.",
+          code: "access_already_active",
+          message: "This account already has full practice access.",
         },
         409,
       );

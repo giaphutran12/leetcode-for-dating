@@ -185,4 +185,6 @@ Checkout, portal sessions, Price selection, webhook verification, subscription
 storage, and practice-credit claims are server-owned. Guests can complete one
 practice before login. Authenticated free use is counted atomically when the
 first AI generation starts for a new attempt, so retries of the same attempt do
-not consume another credit.
+not consume another credit. Owner and admin accounts can be granted permanent
+access through the private `rizzcode_access_grants` database table; they are
+shown as admins rather than as Stripe subscribers.

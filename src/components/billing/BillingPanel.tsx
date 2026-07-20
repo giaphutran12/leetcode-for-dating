@@ -55,7 +55,11 @@ export function BillingPanel() {
     <section aria-labelledby="billing-title">
       <BrandKicker>RizzCode Pro</BrandKicker>
       <h2 id="billing-title">
-        {status?.ok && status.paid ? "Your plan is active." : "Keep training."}
+        {status?.ok && status.accessLevel === "admin"
+          ? "Admin access is active."
+          : status?.ok && status.paid
+            ? "Your plan is active."
+            : "Keep training."}
       </h2>
       {!status ? (
         <p role="status">Checking your practice access…</p>
@@ -63,6 +67,8 @@ export function BillingPanel() {
         <p className="rizz-auth__error" role="alert">
           {status.message}
         </p>
+      ) : status.accessLevel === "admin" ? (
+        <p>Full guided practice is unlocked for this account.</p>
       ) : status.paid ? (
         <>
           <p>

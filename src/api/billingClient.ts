@@ -16,6 +16,7 @@ const statusSchema = z.discriminatedUnion("ok", [
   z.object({
     ok: z.literal(true),
     paid: z.boolean(),
+    accessLevel: z.enum(["admin", "subscription", "free"]),
     subscriptionStatus: z.string().nullable(),
     priceId: z.string().nullable(),
     cancelAtPeriodEnd: z.boolean(),

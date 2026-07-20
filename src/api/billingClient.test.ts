@@ -42,6 +42,7 @@ describe("billing client", () => {
       Response.json({
         ok: true,
         paid: false,
+        accessLevel: "free",
         subscriptionStatus: null,
         priceId: null,
         cancelAtPeriodEnd: false,
@@ -69,6 +70,7 @@ describe("billing client", () => {
     await expect(loadBillingStatus()).resolves.toMatchObject({
       ok: true,
       paid: false,
+      accessLevel: "free",
       freeCreditsRemaining: 1,
     });
   });

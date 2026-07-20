@@ -19,6 +19,7 @@ describe("billing panel", () => {
     vi.mocked(loadBillingStatus).mockResolvedValue({
       ok: true,
       paid: false,
+      accessLevel: "free",
       subscriptionStatus: null,
       priceId: null,
       cancelAtPeriodEnd: false,
@@ -69,6 +70,7 @@ describe("billing panel", () => {
     vi.mocked(loadBillingStatus).mockResolvedValue({
       ok: true,
       paid: true,
+      accessLevel: "subscription",
       subscriptionStatus: "active",
       priceId: "price_monthly",
       cancelAtPeriodEnd: false,
@@ -103,6 +105,29 @@ describe("billing panel", () => {
     });
     fireEvent.click(manage);
     await waitFor(() => expect(createBillingPortal).toHaveBeenCalledOnce());
+  });
+
+  it("shows full access without a Stripe portal for an admin", async () => {
+    const current = await loadBillingStatus();
+    if (!current || !current.ok) throw new Error("Expected billing fixture.");
+    vi.mocked(loadBillingStatus).mockResolvedValue({
+      ...current,
+      paid: false,
+      accessLevel: "admin",
+      subscriptionStatus: null,
+    });
+
+    render(<BillingPanel />);
+
+    expect(
+      await screen.findByRole("heading", { name: "Admin access is active." }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Full guided practice is unlocked for this account."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Manage billing" }),
+    ).not.toBeInTheDocument();
   });
 
   it("tells a free user with zero credits to subscribe now", async () => {

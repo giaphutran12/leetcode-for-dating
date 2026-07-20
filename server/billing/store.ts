@@ -12,11 +12,17 @@ export type PracticeAccess = {
   allowed: boolean;
   paid: boolean;
   remaining: number | null;
-  reason: "paid" | "free_credit" | "existing_attempt" | "limit_reached";
+  reason:
+    | "admin"
+    | "paid"
+    | "free_credit"
+    | "existing_attempt"
+    | "limit_reached";
 };
 
 export type BillingStatus = {
   paid: boolean;
+  accessLevel: "admin" | "subscription" | "free";
   subscriptionStatus: string | null;
   priceId: string | null;
   cancelAtPeriodEnd: boolean;
@@ -70,6 +76,7 @@ export async function getBillingStatus(
     { data: subscription, error: subscriptionError },
     usage,
     { data: accountState, error: accountStateError },
+    { data: accessLevel, error: accessLevelError },
   ] =
     await Promise.all([
       client
@@ -88,10 +95,14 @@ export async function getBillingStatus(
         .select("state")
         .eq("user_id", userId)
         .maybeSingle(),
+      client.rpc("get_rizzcode_access_level", {
+        p_user_id: userId,
+      }),
     ]);
   if (subscriptionError) throw subscriptionError;
   if (usage.error) throw usage.error;
   if (accountStateError) throw accountStateError;
+  const grantedAccessLevel = accessLevelError ? "free" : accessLevel;
   const progress = accountState?.state as
     | { progress?: { completedScenarioIds?: unknown } }
     | undefined;
@@ -115,6 +126,12 @@ export async function getBillingStatus(
   );
   return {
     paid,
+    accessLevel:
+      grantedAccessLevel === "admin"
+        ? "admin"
+        : paid
+          ? "subscription"
+          : "free",
     subscriptionStatus: subscription?.status ?? null,
     priceId: subscription?.stripe_price_id ?? null,
     cancelAtPeriodEnd: subscription?.cancel_at_period_end ?? false,
