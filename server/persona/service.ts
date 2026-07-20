@@ -11,6 +11,7 @@ import type {
   PersonaReply,
   PersonaRequest,
 } from "../../src/domain/types";
+import { detectHardGates } from "../../src/domain/scoring";
 import {
   authoredFallbackReply,
   beginTurn,
@@ -128,6 +129,30 @@ export type PersonaServiceResponse =
       message: string;
     };
 
+type PersonaRequestContext = {
+  userId?: string;
+  logProviderFailure?: boolean;
+};
+
+function stopLevelReply(): PersonaReply {
+  return {
+    actions: [
+      {
+        kind: "text",
+        body: "No. That's disrespectful. Don't contact me again.",
+        delayMs: 420,
+      },
+    ],
+    interestChange: "down",
+    state: {
+      engagement: "closed",
+      boundary: "explicit",
+      terminal: true,
+    },
+    terminalReason: "boundary",
+  };
+}
+
 export class PersonaService {
   private readonly inFlight = new Map<
     string,
@@ -144,7 +169,10 @@ export class PersonaService {
     private readonly provider: PersonaProvider = aiSdkPersonaProvider,
   ) {}
 
-  async respond(request: PersonaRequest): Promise<PersonaServiceResponse> {
+  async respond(
+    request: PersonaRequest,
+    context: PersonaRequestContext = {},
+  ): Promise<PersonaServiceResponse> {
     const scenario = getScenario(request.scenarioId);
     if (!scenario) {
       return personaError(
@@ -197,6 +225,7 @@ export class PersonaService {
           request.turn,
           request.body,
         ),
+        context,
       ).finally(() => {
         this.inFlight.delete(operationKey);
       });
@@ -212,7 +241,10 @@ export class PersonaService {
     }
   }
 
-  async prepare(request: PersonaRequest): Promise<PersonaServiceResponse> {
+  async prepare(
+    request: PersonaRequest,
+    context: PersonaRequestContext = {},
+  ): Promise<PersonaServiceResponse> {
     const scenario = getScenario(request.scenarioId);
     if (!scenario) {
       return personaError(
@@ -283,6 +315,7 @@ export class PersonaService {
         request,
         scenario,
         inspection.attempt,
+        { ...context, logProviderFailure: false },
       ).finally(() => {
         this.prepareInFlight.delete(operationKey);
       });
@@ -306,9 +339,10 @@ export class PersonaService {
     scenario: NonNullable<ReturnType<typeof getScenario>>,
     attempt: Attempt,
     prepared?: PreparedPersonaTurn,
+    context: PersonaRequestContext = {},
   ): Promise<PersonaServiceResponse> {
     const generated =
-      prepared ?? (await this.generateReply(request, scenario, attempt));
+      prepared ?? (await this.generateReply(request, scenario, attempt, context));
     const { reply, usedFallback } = generated;
 
     try {
@@ -320,7 +354,7 @@ export class PersonaService {
         reply,
         usedFallback,
       });
-      logConversationEvent("info", {
+      await logConversationEvent("info", {
         event: "persona.turn.completed",
         attemptId: request.attemptId,
         scenarioId: request.scenarioId,
@@ -330,6 +364,7 @@ export class PersonaService {
         conversation: committedAttempt.messages,
         personaState: committedAttempt.personaState,
         details: { reply },
+        userId: context.userId,
       });
     } catch (error) {
       return personaError(
@@ -354,8 +389,14 @@ export class PersonaService {
     request: PersonaRequest,
     scenario: NonNullable<ReturnType<typeof getScenario>>,
     attempt: Attempt,
+    context: PersonaRequestContext,
   ): Promise<PersonaServiceResponse> {
-    const prepared = await this.generateReply(request, scenario, attempt);
+    const prepared = await this.generateReply(
+      request,
+      scenario,
+      attempt,
+      context,
+    );
     if (
       !this.store.savePrepared({
         scenario,
@@ -385,9 +426,19 @@ export class PersonaService {
     request: PersonaRequest,
     scenario: NonNullable<ReturnType<typeof getScenario>>,
     attempt: Attempt,
+    context: PersonaRequestContext,
   ): Promise<PreparedPersonaTurn> {
     let reply: PersonaReply;
     let usedFallback = false;
+    const incomingAttempt = beginTurn(attempt, request.body);
+    if (detectHardGates(incomingAttempt).severity === "stop") {
+      return {
+        turn: request.turn,
+        body: request.body,
+        reply: stopLevelReply(),
+        usedFallback: false,
+      };
+    }
     try {
       if (
         !process.env.OPENAI_API_KEY &&
@@ -408,16 +459,19 @@ export class PersonaService {
         request.turn,
       );
     } catch (error) {
-      logConversationEvent("error", {
-        event: "persona.provider.failed",
-        attemptId: request.attemptId,
-        scenarioId: request.scenarioId,
-        turn: request.turn,
-        model: process.env.RIZZCODE_PERSONA_MODEL || "gpt-5.4-nano",
-        conversation: beginTurn(attempt, request.body).messages,
-        personaState: attempt.personaState,
-        details: { error: modelErrorDetails(error) },
-      });
+      if (context.logProviderFailure !== false) {
+        await logConversationEvent("error", {
+          event: "persona.provider.failed",
+          attemptId: request.attemptId,
+          scenarioId: request.scenarioId,
+          turn: request.turn,
+          model: process.env.RIZZCODE_PERSONA_MODEL || "gpt-5.4-nano",
+          conversation: incomingAttempt.messages,
+          personaState: attempt.personaState,
+          details: { error: modelErrorDetails(error) },
+          userId: context.userId,
+        });
+      }
       usedFallback = true;
       reply = authoredFallbackReply({
         scenario,

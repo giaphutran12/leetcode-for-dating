@@ -429,6 +429,9 @@
 }
 
 .rizz-inline-notice {
+  width: min(1372px, calc(100% - 24px));
+  margin-right: auto;
+  margin-left: auto;
   color: var(--ink);
   background: #f8dca8;
 }
@@ -704,6 +707,7 @@
 /* Curriculum */
 .rizz-onboarding-callout {
   display: flex;
+  width: min(1372px, calc(100% - 24px));
   max-width: 1372px;
   align-items: center;
   justify-content: space-between;

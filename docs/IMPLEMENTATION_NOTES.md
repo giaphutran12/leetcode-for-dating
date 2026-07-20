@@ -17,6 +17,10 @@ default low-latency persona model. Structured actions require at least one short
 text bubble and optional allowlisted emoji reactions. The prompt requests at
 most one question. Boundary state is monotonic and engagement moves at most one
 level.
+Server-owned stop gates intercept blatant directed sexual pressure, coercion,
+threats, and continued solicitation before persona generation. Those turns
+receive a firm explicit boundary, close immediately, and cannot be rewarded by
+model-generated flirting or continued logistics.
 Provider failure records a visible authored fallback instead of pretending the
 model replied.
 
@@ -35,13 +39,23 @@ The judge server:
    `Output.object()`.
 7. Verifies five unique criteria and exact user-turn excerpts.
 8. Rejects unsupported outcome claims.
-9. Confirms contact and date agreement match the persona's actual reply.
-10. Recalculates raw score, caps, final score, and verdict.
-11. Leaves XP calculation to the application domain.
+9. Forces stop-level transcripts to the server-owned `boundary_crossed`
+   outcome even if the model proposes a more favorable outcome.
+10. Confirms contact and date agreement match the persona's actual reply.
+11. Recalculates raw score, caps, final score, and verdict.
+12. Leaves XP calculation to the application domain.
 
 Neither provider has tools, browsing, memory, or client credential access. A
 logical judgment operation performs one request and at most one transient
 retry. An explicit UI retry starts a new operation over immutable responses.
+
+Every committed persona turn and judge operation is also appended to
+`public.rizzcode_conversation_events`. The row contains the complete canonical
+transcript, persona state, model metadata, fallback status, and parsed
+result/error details. Signed-in requests attach the verified Supabase user ID;
+guest attempts remain anonymous. The table is RLS-protected and grants no
+browser-role access. Idle prepared drafts are excluded because they were never
+sent.
 
 ## Practice state and races
 

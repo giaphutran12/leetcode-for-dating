@@ -57,9 +57,13 @@ export async function POST(request: Request) {
       }
     } else if (
       event.type === "customer.subscription.created" ||
-      event.type === "customer.subscription.updated" ||
-      event.type === "customer.subscription.deleted"
+      event.type === "customer.subscription.updated"
     ) {
+      await storeSubscription(
+        client,
+        await stripe.subscriptions.retrieve(event.data.object.id),
+      );
+    } else if (event.type === "customer.subscription.deleted") {
       await storeSubscription(client, event.data.object);
     } else if (
       event.type === "invoice.paid" ||
@@ -75,6 +79,10 @@ export async function POST(request: Request) {
     }
     return Response.json({ received: true }, { status: 200 });
   } catch {
+    console.error("Stripe webhook processing failed.", {
+      eventId: event.id,
+      eventType: event.type,
+    });
     return Response.json({ ok: false }, { status: 500 });
   }
 }

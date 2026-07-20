@@ -14,6 +14,7 @@ vi.mock("../../../../../server/auth/verifyRequest", () => ({
 }));
 vi.mock("../../../../../server/billing/config", () => ({
   siteUrl: () => "https://rizzcode.example",
+  STRIPE_CHECKOUT_INTEGRATION_IDENTIFIER: "rizzcode_testtest",
 }));
 vi.mock("../../../../../server/billing/store", () => ({
   createBillingAdminClient: mocks.createBillingAdminClient,
@@ -65,6 +66,7 @@ describe("billing checkout route", () => {
     expect(mocks.checkoutCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         mode: "subscription",
+        integration_identifier: "rizzcode_testtest",
         customer: "cus_test",
         line_items: [{ price: "price_annual", quantity: 1 }],
         client_reference_id: "user-1",

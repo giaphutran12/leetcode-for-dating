@@ -7,9 +7,9 @@ sets an amount or a Price ID.
 
 ## Launch offer
 
-- One complete guest practice before account creation.
-- Two server-owned guided-practice credits after account creation, for three
-  guided practices total when combined with the guest practice.
+- Three unique guided practices total, whether they are completed before or
+  after account creation. Replaying a completed scenario does not consume
+  another free practice.
 - RizzCode Pro monthly: USD $14.99.
 - RizzCode Pro annual founding price: USD $99.99.
 - Paid coaching is presented as standard access subject to documented fair use,
@@ -92,8 +92,9 @@ subscribers remain on their original Price until they are deliberately migrated.
 2. The server maps `monthly` or `annual` to a stable Stripe lookup key, resolves
    the current Price, and creates a Checkout Session.
 3. A signed Stripe webhook writes the subscription status to Supabase.
-4. The first AI generation for a new authenticated attempt atomically claims a
-   practice credit.
+4. The first AI generation for a new authenticated attempt atomically claims
+   one of three unique free practices. Synced guest progress counts toward the
+   same limit.
 5. Active or trialing subscriptions bypass the free-credit limit.
 6. Cancelled or unpaid subscriptions stop bypassing the limit after Stripe
    updates the stored subscription status.

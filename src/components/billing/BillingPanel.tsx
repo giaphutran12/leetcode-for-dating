@@ -86,9 +86,9 @@ export function BillingPanel() {
       ) : (
         <>
           <p>
-            {status.freeCreditsRemaining} guided practice
-            {status.freeCreditsRemaining === 1 ? " credit" : " credits"} left.
-            Subscribe when the free reps are done.
+            {status.freeCreditsRemaining} free unique practice
+            {status.freeCreditsRemaining === 1 ? "" : "s"} left. Subscribe when
+            the free reps are done.
           </p>
           <div className="rizz-account__actions">
             <BrandButton

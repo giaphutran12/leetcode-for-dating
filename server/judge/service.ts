@@ -77,6 +77,7 @@ export async function judgeAttempt(
   provider: JudgeProvider = aiSdkJudgeProvider,
   conversationSource: PersonaConversationStore | Attempt =
     personaConversationStore,
+  context: { userId?: string } = {},
 ): Promise<JudgeApiResponse> {
   if (!process.env.OPENAI_API_KEY && provider === aiSdkJudgeProvider) {
     return {
@@ -149,7 +150,7 @@ export async function judgeAttempt(
         };
   const hardGate = detectHardGates(attempt);
   const model = process.env.RIZZCODE_JUDGE_MODEL || "gpt-5.6-luna";
-  logConversationEvent("info", {
+  await logConversationEvent("info", {
     event: "judge.started",
     attemptId: request.attemptId,
     scenarioId: request.scenarioId,
@@ -157,6 +158,7 @@ export async function judgeAttempt(
     conversation: attempt.messages,
     personaState: attempt.personaState,
     details: { hardGate },
+    userId: context.userId,
   });
 
   let lastError: JudgeServiceError | undefined;
@@ -176,7 +178,7 @@ export async function judgeAttempt(
         attempt,
         draft,
       });
-      logConversationEvent("info", {
+      await logConversationEvent("info", {
         event: "judge.completed",
         attemptId: request.attemptId,
         scenarioId: request.scenarioId,
@@ -185,6 +187,7 @@ export async function judgeAttempt(
         conversation: attempt.messages,
         personaState: attempt.personaState,
         details: { draft, result },
+        userId: context.userId,
       });
       return { ok: true, result };
     } catch (error) {
@@ -192,7 +195,7 @@ export async function judgeAttempt(
         error instanceof Error ? error.message : "Unknown judge failure";
       const invalidOutput =
         /rubric|evidence|outcome|structured|schema|parse|invalid/i.test(message);
-      logConversationEvent("error", {
+      await logConversationEvent("error", {
         event: "judge.failed",
         attemptId: request.attemptId,
         scenarioId: request.scenarioId,
@@ -207,6 +210,7 @@ export async function judgeAttempt(
           draft,
           error: modelErrorDetails(error),
         },
+        userId: context.userId,
       });
       if (
         invalidOutput

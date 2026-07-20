@@ -43,11 +43,13 @@ describe("Stripe webhook route", () => {
   });
 
   it("stores Stripe subscription updates only after verification", async () => {
-    const subscription = { id: "sub_test" };
+    const eventSubscription = { id: "sub_test" };
+    const currentSubscription = { id: "sub_test", status: "active" };
     mocks.constructEvent.mockReturnValue({
       type: "customer.subscription.updated",
-      data: { object: subscription },
+      data: { object: eventSubscription },
     });
+    mocks.retrieveSubscription.mockResolvedValue(currentSubscription);
     const response = await POST(
       new Request("https://rizzcode.example/api/billing/webhook", {
         method: "POST",
@@ -56,6 +58,10 @@ describe("Stripe webhook route", () => {
       }),
     );
     expect(response.status).toBe(200);
-    expect(mocks.storeSubscription).toHaveBeenCalledWith({}, subscription);
+    expect(mocks.retrieveSubscription).toHaveBeenCalledWith("sub_test");
+    expect(mocks.storeSubscription).toHaveBeenCalledWith(
+      {},
+      currentSubscription,
+    );
   });
 });

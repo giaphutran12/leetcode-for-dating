@@ -59,6 +59,52 @@ describe("hard gates and server-owned arithmetic", () => {
     expect(gate.codes).toContain("continued_after_refusal");
   });
 
+  it("recognizes the production sexual-pressure slang and forces a boundary outcome", () => {
+    const scenario = getScenario("RC-040")!;
+    const response = { turn: 1 as const, body: "u dtf" };
+    for (const body of [
+      "u dtf",
+      "lowk i just tryna bang",
+      "tue 9 pm we bang ok",
+      "we can talk then bang",
+    ]) {
+      const phraseAttempt = attemptFromResponses(
+        scenario,
+        [{ turn: 1, body }],
+        `attempt-${body}`,
+      );
+      expect(detectHardGates(phraseAttempt).codes).toContain(
+        "explicit_sexual_pressure",
+      );
+    }
+    const attempt = attemptFromResponses(
+      scenario,
+      [
+        response,
+        { turn: 2, body: "lowk i just tryna bang" },
+        { turn: 3, body: "we can talk then bang" },
+      ],
+      "attempt-production-regression",
+    );
+    const gate = detectHardGates(attempt);
+    expect(gate).toMatchObject({
+      triggered: true,
+      severity: "stop",
+      maxScore: 2,
+    });
+    expect(gate.codes).toContain("explicit_sexual_pressure");
+
+    const result = finalizeJudgeResult({
+      attemptId: attempt.id,
+      scenario,
+      attempt,
+      draft: perfectDraft(response.body, 1, "date_agreed"),
+    });
+    expect(result.outcome.code).toBe("boundary_crossed");
+    expect(result.finalScore).toBe(2);
+    expect(result.verdict).toBe("FUMBLED");
+  });
+
   it("caps negging at four", () => {
     const scenario = getScenario("RC-001")!;
     const attempt = attemptFromResponses(

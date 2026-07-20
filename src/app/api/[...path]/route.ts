@@ -20,7 +20,10 @@ import {
   signConversationSession,
   verifyConversationSession,
 } from "../../../../server/session";
-import { authenticatedUserForRequest } from "../../../../server/auth/verifyRequest";
+import {
+  authenticatedUserForRequest,
+  requestAuthenticatedUserId,
+} from "../../../../server/auth/verifyRequest";
 import { billingStorageConfigured } from "../../../../server/billing/config";
 import {
   claimPracticeAccess,
@@ -105,6 +108,9 @@ export async function POST(
     }
 
     const preparing = path[1] === "prepare";
+    const userId = preparing
+      ? undefined
+      : await requestAuthenticatedUserId(request);
     if (path.length === 2 && !preparing) {
       return json({ ok: false, message: "Not found." }, 404);
     }
@@ -166,8 +172,8 @@ export async function POST(
       return json(result, 409);
     }
     const result = preparing
-      ? await personaService.prepare(parsed.data)
-      : await personaService.respond(parsed.data);
+      ? await personaService.prepare(parsed.data, { userId })
+      : await personaService.respond(parsed.data, { userId });
     let publicResult: PersonaApiResponse | {
       ok: true;
       attemptId: string;
@@ -249,10 +255,12 @@ export async function POST(
       };
       return json(result, 409);
     }
+    const userId = await requestAuthenticatedUserId(request);
     const result = await judgeAttempt(
       parsed.data,
       selectJudgeProvider(undefined),
       canonicalAttempt,
+      { userId },
     );
     return json(result, result.ok ? 200 : result.retryable ? 503 : 409);
   }

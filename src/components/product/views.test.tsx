@@ -85,17 +85,17 @@ describe("product view contracts", () => {
     );
   });
 
-  it("asks a guest to log in before opening a second new scenario", async () => {
+  it("asks a guest to log in before opening a fourth new scenario", async () => {
     window.localStorage.setItem(
       "rizzcode.v1.progress",
       JSON.stringify({
         version: 1,
-        publicXP: 10,
+        publicXP: 30,
         level: 1,
         streak: 1,
-        bestScores: { "RC-001": 7 },
-        bestMasteryXP: { "RC-001": 7 },
-        completedScenarioIds: ["RC-001"],
+        bestScores: { "RC-001": 7, "RC-002": 7, "RC-003": 7 },
+        bestMasteryXP: { "RC-001": 7, "RC-002": 7, "RC-003": 7 },
+        completedScenarioIds: ["RC-001", "RC-002", "RC-003"],
         achievements: [],
         rewardedAttemptIds: ["a"],
         lastPracticeDate: "2026-07-19",
@@ -105,13 +105,13 @@ describe("product view contracts", () => {
     withProvider(<CurriculumView />);
 
     expect(
-      await screen.findByText("1/1 guest reps complete"),
+      await screen.findByText("3/3 guest reps complete"),
     ).toBeInTheDocument();
     expect(
       screen.getAllByRole("link", { name: /log in for this rep/i }),
-    ).toHaveLength(66);
+    ).toHaveLength(64);
     expect(
       screen.getAllByRole("link", { name: /run it again/i }),
-    ).toHaveLength(1);
+    ).toHaveLength(3);
   });
 });

@@ -15,22 +15,25 @@ function progressWith(...scenarioIds: string[]) {
 }
 
 describe("guest practice access", () => {
-  it("lets a guest complete one distinct scenario", () => {
-    expect(GUEST_SCENARIO_LIMIT).toBe(1);
+  it("lets a guest complete three distinct scenarios", () => {
+    expect(GUEST_SCENARIO_LIMIT).toBe(3);
     expect(guestCanOpenScenario(progressWith(), "RC-001")).toBe(true);
+    expect(
+      guestCanOpenScenario(progressWith("RC-001", "RC-002"), "RC-003"),
+    ).toBe(true);
   });
 
-  it("gates the second new scenario but keeps completed replays available", () => {
-    const progress = progressWith("RC-001");
+  it("gates the fourth new scenario but keeps completed replays available", () => {
+    const progress = progressWith("RC-001", "RC-002", "RC-003");
 
     expect(guestCanOpenScenario(progress, "RC-001")).toBe(true);
-    expect(guestCanOpenScenario(progress, "RC-002")).toBe(false);
-    expect(requiresLoginForScenario(progress, "RC-002", true)).toBe(false);
+    expect(guestCanOpenScenario(progress, "RC-004")).toBe(false);
+    expect(requiresLoginForScenario(progress, "RC-004", true)).toBe(false);
   });
 
   it("builds a local return path for the Google login flow", () => {
-    expect(loginPathForScenario("RC-002")).toBe(
-      "/login?reason=guest-limit&returnTo=%2Fpractice%2FRC-002",
+    expect(loginPathForScenario("RC-004")).toBe(
+      "/login?reason=guest-limit&returnTo=%2Fpractice%2FRC-004",
     );
   });
 });

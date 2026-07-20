@@ -30,7 +30,8 @@ const stopPatterns: Array<{
   },
   {
     code: "explicit_sexual_pressure",
-    pattern: /\b(send nudes|sleep with me|have sex with me|you owe me sex)\b/i,
+    pattern:
+      /\b(send nudes|sleep with me|have sex with me|you owe me sex|(?:are |r )?(?:u|you) (?:dtf|down to (?:f(?:u|\*)?ck|fk|bang))|(?:i(?:'m| am)? )?(?:just |lowk )?(?:tryna|trying to|wanna|want to) (?:f(?:u|\*)?ck|fk|bang)|we (?:can |should |will )?(?:f(?:u|\*)?ck|fk|bang)|(?:then|after(?:ward)?) (?:we )?(?:f(?:u|\*)?ck|fk|bang))\b/i,
     reason: "Directed sexual pressure is a stop-level violation.",
   },
   {
@@ -81,7 +82,7 @@ function hasExplicitRefusalBefore(attempt: Attempt, turn: number): boolean {
     (message) =>
       message.speaker === "her" &&
       message.turn < turn &&
-      /\b(no thanks|not interested|do not (?:think i )?feel|please stop|give me space|do not want|does not work for me)\b/i.test(
+      /\b(no thanks|not interested|do not (?:think i )?feel|please stop|give me space|do not want|does not work for me|i(?:'m| am) not (?:banging|having sex)|talking first|keep(?:ing)? it respectful)\b/i.test(
         message.body,
       ),
   );
@@ -99,7 +100,7 @@ function hasLowInterestBefore(attempt: Attempt, turn: number): boolean {
 }
 
 const solicitationPattern =
-  /\b(give me (?:your )?(?:number|contact)|go out with me|another chance|meet me|date me|you will change your mind|you'll change your mind)\b/i;
+  /\b(give me (?:your )?(?:number|contact)|go out with me|another chance|meet me|date me|you will change your mind|you'll change your mind|(?:f(?:u|\*)?ck|fk|bang)|sex)\b/i;
 
 function userMessages(attempt: Attempt) {
   return attempt.messages.filter(
@@ -269,7 +270,20 @@ export function finalizeJudgeResult(input: {
   attempt: Attempt;
   draft: JudgeModelDraft;
 }): JudgeResult {
-  const { attemptId, scenario, attempt, draft } = input;
+  const { attemptId, scenario, attempt } = input;
+  const hardGate = detectHardGates(attempt);
+  const draft =
+    hardGate.severity === "stop"
+      ? {
+          ...input.draft,
+          outcome: {
+            code: "boundary_crossed" as const,
+            label: OUTCOME_LABELS.boundary_crossed,
+            confidence: "high" as const,
+            basis: hardGate.evidence,
+          },
+        }
+      : input.draft;
   const ids = draft.rubric.map((item) => item.id);
 
   if (
@@ -302,7 +316,6 @@ export function finalizeJudgeResult(input: {
     throw new Error("Judge outcome is unsupported by the transcript.");
   }
 
-  const hardGate = detectHardGates(attempt);
   const rawScore = draft.rubric.reduce((sum, item) => sum + item.score, 0);
   const finalScore = Math.min(rawScore, hardGate.maxScore);
 

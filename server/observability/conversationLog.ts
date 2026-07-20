@@ -1,10 +1,11 @@
 import type { Attempt } from "../../src/domain/types";
+import { persistConversationEvent } from "./conversationPersistence";
 
 const MAX_MODEL_TEXT_LENGTH = 12_000;
 
 type LogLevel = "info" | "error";
 
-type ConversationEvent = {
+export type ConversationEvent = {
   event:
     | "persona.turn.completed"
     | "persona.provider.failed"
@@ -20,6 +21,7 @@ type ConversationEvent = {
   conversation: Attempt["messages"];
   personaState: Attempt["personaState"];
   details?: unknown;
+  userId?: string;
 };
 
 function boundedText(value: unknown): string | undefined {
@@ -50,10 +52,10 @@ export function modelErrorDetails(error: unknown): Record<string, unknown> {
   };
 }
 
-export function logConversationEvent(
+export async function logConversationEvent(
   level: LogLevel,
   event: ConversationEvent,
-): void {
+): Promise<void> {
   const payload = JSON.stringify({
     timestamp: new Date().toISOString(),
     service: "rizzcode-conversation",
@@ -64,4 +66,5 @@ export function logConversationEvent(
   } else {
     console.info(payload);
   }
+  await persistConversationEvent(event);
 }

@@ -33,6 +33,26 @@ export async function authenticatedUserForRequest(
   return error ? null : user;
 }
 
+export async function requestAuthenticatedUserId(
+  request: Request,
+): Promise<string | undefined> {
+  if (
+    process.env.NODE_ENV === "test" ||
+    (process.env.NODE_ENV !== "production" &&
+      process.env.NEXT_PUBLIC_RIZZCODE_MOCK_AUTH === "1")
+  ) {
+    return undefined;
+  }
+  return (await authenticatedUserForRequest(request))?.id;
+}
+
 export async function requestHasAuthenticatedUser(request: Request) {
-  return Boolean(await authenticatedUserForRequest(request));
+  if (
+    process.env.NODE_ENV === "test" ||
+    (process.env.NODE_ENV !== "production" &&
+      process.env.NEXT_PUBLIC_RIZZCODE_MOCK_AUTH === "1")
+  ) {
+    return true;
+  }
+  return Boolean(await requestAuthenticatedUserId(request));
 }

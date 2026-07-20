@@ -24,4 +24,13 @@ describe("billing configuration", () => {
     expect(billingStorageConfigured(environment)).toBe(true);
     expect(billingStorageConfigured({} as NodeJS.ProcessEnv)).toBe(false);
   });
+
+  it("uses the current Vercel deployment URL outside local development", () => {
+    expect(
+      siteUrl({
+        NODE_ENV: "test",
+        VERCEL_URL: "rizzcode-nextjs-git-stripe.vercel.app",
+      } as NodeJS.ProcessEnv),
+    ).toBe("https://rizzcode-nextjs-git-stripe.vercel.app");
+  });
 });

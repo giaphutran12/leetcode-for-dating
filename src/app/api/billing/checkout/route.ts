@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { authenticatedUserForRequest } from "../../../../../server/auth/verifyRequest";
-import { siteUrl } from "../../../../../server/billing/config";
+import {
+  siteUrl,
+  STRIPE_CHECKOUT_INTEGRATION_IDENTIFIER,
+} from "../../../../../server/billing/config";
 import {
   createBillingAdminClient,
   getBillingStatus,
@@ -57,6 +60,7 @@ export async function POST(request: Request) {
     const baseUrl = siteUrl();
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
+      integration_identifier: STRIPE_CHECKOUT_INTEGRATION_IDENTIFIER,
       customer,
       client_reference_id: user.id,
       line_items: [

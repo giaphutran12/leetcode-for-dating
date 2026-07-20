@@ -4,7 +4,7 @@ import {
   type User,
 } from "@supabase/supabase-js";
 import type Stripe from "stripe";
-import { FREE_AUTHENTICATED_PRACTICE_CREDITS } from "./config";
+import { FREE_PRACTICE_LIMIT } from "./config";
 
 export const PAID_SUBSCRIPTION_STATUSES = ["active", "trialing"] as const;
 
@@ -66,7 +66,11 @@ export async function getBillingStatus(
   client: SupabaseClient,
   userId: string,
 ): Promise<BillingStatus> {
-  const [{ data: subscription, error: subscriptionError }, usage] =
+  const [
+    { data: subscription, error: subscriptionError },
+    usage,
+    { data: accountState, error: accountStateError },
+  ] =
     await Promise.all([
       client
         .from("rizzcode_subscriptions")
@@ -77,12 +81,32 @@ export async function getBillingStatus(
         .maybeSingle(),
       client
         .from("rizzcode_practice_usage")
-        .select("*", { count: "exact", head: true })
+        .select("scenario_id")
         .eq("user_id", userId),
+      client
+        .from("rizzcode_user_state")
+        .select("state")
+        .eq("user_id", userId)
+        .maybeSingle(),
     ]);
   if (subscriptionError) throw subscriptionError;
   if (usage.error) throw usage.error;
-  const freeCreditsUsed = Math.max(0, usage.count ?? 0);
+  if (accountStateError) throw accountStateError;
+  const progress = accountState?.state as
+    | { progress?: { completedScenarioIds?: unknown } }
+    | undefined;
+  const completedScenarioIds = Array.isArray(
+    progress?.progress?.completedScenarioIds,
+  )
+    ? progress.progress.completedScenarioIds.filter(
+        (value): value is string => typeof value === "string",
+      )
+    : [];
+  const usedScenarioIds = new Set([
+    ...completedScenarioIds,
+    ...(usage.data ?? []).map((row) => row.scenario_id),
+  ]);
+  const freeCreditsUsed = Math.min(FREE_PRACTICE_LIMIT, usedScenarioIds.size);
   const paid = Boolean(
     subscription &&
       PAID_SUBSCRIPTION_STATUSES.includes(
@@ -98,7 +122,7 @@ export async function getBillingStatus(
     freeCreditsUsed,
     freeCreditsRemaining: Math.max(
       0,
-      FREE_AUTHENTICATED_PRACTICE_CREDITS - freeCreditsUsed,
+      FREE_PRACTICE_LIMIT - freeCreditsUsed,
     ),
   };
 }

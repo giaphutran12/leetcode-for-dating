@@ -153,11 +153,15 @@ Required automated coverage:
 16. Edited drafts cannot consume stale prepared replies.
 17. Sent, Delivered, and Seen states render on desktop, tablet, and mobile.
 18. All 67 scenarios are available without completion gates.
+19. Directed sexual pressure closes the persona immediately without a model call.
+20. Stop-level transcripts always produce a `boundary_crossed` FUMBLED result.
+21. Sent transcripts, persona replies, and judge operations persist server-side
+    in Supabase while unsent drafts do not.
 
 ## Deliberately not claimed
 
 - Arbitrary web GIF or sticker search
 - Generated images
 - Voice, avatar, or live-human messaging
-- Durable multi-region conversation storage
+- Multi-region conversation replication guarantees
 - Open-ended unbounded chat

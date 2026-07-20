@@ -1,4 +1,6 @@
-export const FREE_AUTHENTICATED_PRACTICE_CREDITS = 2;
+export const FREE_PRACTICE_LIMIT = 3;
+
+export const STRIPE_CHECKOUT_INTEGRATION_IDENTIFIER = "rizzcode_rhdubcmf";
 
 export type BillingPlan = "monthly" | "annual";
 
@@ -19,8 +21,11 @@ export function billingStorageConfigured(
 export function siteUrl(
   environment: NodeJS.ProcessEnv = process.env,
 ): string {
-  return (
-    environment.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/+$/, "") ||
-    "http://127.0.0.1:4173"
-  );
+  const configured = environment.NEXT_PUBLIC_SITE_URL?.trim();
+  if (configured) return configured.replace(/\/+$/, "");
+
+  const vercelUrl = environment.VERCEL_URL?.trim();
+  if (vercelUrl) return `https://${vercelUrl.replace(/^https?:\/\//, "")}`;
+
+  return "http://127.0.0.1:4173";
 }

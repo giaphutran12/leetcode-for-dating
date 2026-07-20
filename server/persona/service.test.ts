@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { scenarios } from "../../src/data/scenarios";
 import type { PersonaRequest } from "../../src/domain/types";
 import {
@@ -114,6 +114,39 @@ describe("adaptive persona service", () => {
     }
   });
 
+  it("ends immediately on directed sexual pressure without calling the model", async () => {
+    let calls = 0;
+    const provider: PersonaProvider = {
+      async generate(input) {
+        calls += 1;
+        return fixturePersonaProvider.generate(input);
+      },
+    };
+    const store = new PersonaConversationStore();
+    const service = new PersonaService(store, provider);
+    const result = await service.respond(
+      request("attempt-hard-boundary", "RC-040", 1, "u dtf"),
+    );
+
+    expect(calls).toBe(0);
+    expect(result).toMatchObject({
+      ok: true,
+      usedFallback: false,
+      reply: {
+        interestChange: "down",
+        state: {
+          engagement: "closed",
+          boundary: "explicit",
+          terminal: true,
+        },
+        terminalReason: "boundary",
+      },
+    });
+    expect(
+      store.getAttempt("attempt-hard-boundary", "RC-040")?.userTurn,
+    ).toBe(1);
+  });
+
   it("falls back when structurally valid output has no text action", async () => {
     const reactionOnlyProvider: PersonaProvider = {
       async generate() {
@@ -159,6 +192,25 @@ describe("adaptive persona service", () => {
     expect(
       store.getAttempt(draft.attemptId, draft.scenarioId)?.userTurn,
     ).toBe(1);
+  });
+
+  it("does not log an unsent draft when background preparation fails", async () => {
+    const errorLog = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    const service = new PersonaService(new PersonaConversationStore(), {
+      async generate() {
+        throw new Error("provider offline");
+      },
+    });
+
+    const result = await service.prepare(
+      request("attempt-unsent-draft", "RC-035", 1, "unfinished draft"),
+    );
+
+    expect(result.ok).toBe(true);
+    expect(errorLog).not.toHaveBeenCalled();
+    errorLog.mockRestore();
   });
 
   it("never commits a stale prepared reply after the draft changes", async () => {
