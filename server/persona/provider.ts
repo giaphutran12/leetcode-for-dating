@@ -96,11 +96,29 @@ export const fixturePersonaProvider: PersonaProvider = {
         body: fixtureReply(body, scenario),
       },
     ];
+    const text = actions.find((action) => action.kind === "text")?.body ?? "";
+    const contribution =
+      (text.match(/[^.!?\n]+[.!?]?/g) ?? [])
+        .find((segment) => !segment.includes("?"))
+        ?.trim() || text;
+    const moves: PersonaModelDraft["move"][] = [
+      "reveal",
+      "tease",
+      "pivot",
+      "challenge",
+      "reveal",
+      "close",
+    ];
     return {
       actions,
+      move: moves[turn - 1],
+      contribution,
       interestChange: boundaryHit || /\b(hate you|shut up|boring)\b/i.test(body)
         ? "down"
         : "up",
+      energyChange: boundaryHit ? "down" : "same",
+      callbackSeed: null,
+      callbackUsed: null,
       boundary: boundaryHit
         ? "explicit"
         : /\b(hate you|shut up)\b/i.test(body)

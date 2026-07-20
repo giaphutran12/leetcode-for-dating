@@ -5,6 +5,7 @@ import {
   fixturePersonaProvider,
   type PersonaProvider,
 } from "./provider";
+import type { PersonaModelDraft } from "./schema";
 import { PersonaService } from "./service";
 import { PersonaConversationStore } from "./store";
 
@@ -20,6 +21,26 @@ function request(
     scenarioId,
     turn,
     body,
+  };
+}
+
+function modelDraft(
+  overrides: Partial<PersonaModelDraft> = {},
+): PersonaModelDraft {
+  const actions = overrides.actions ?? [{ kind: "text", body: "okay" }];
+  const text =
+    actions.find((action) => action.kind === "text")?.body ?? "okay";
+  return {
+    actions,
+    move: "reveal",
+    contribution: text.split("?")[0]?.trim() || text,
+    interestChange: "same",
+    energyChange: "same",
+    callbackSeed: null,
+    callbackUsed: null,
+    boundary: "none",
+    terminalReason: null,
+    ...overrides,
   };
 }
 
@@ -150,12 +171,9 @@ describe("adaptive persona service", () => {
   it("falls back when structurally valid output has no text action", async () => {
     const reactionOnlyProvider: PersonaProvider = {
       async generate() {
-        return {
+        return modelDraft({
           actions: [{ kind: "reaction", body: "👀" }],
-          interestChange: "same",
-          boundary: "none",
-          terminalReason: null,
-        };
+        });
       },
     };
     const service = new PersonaService(
@@ -278,12 +296,10 @@ describe("adaptive persona service", () => {
   it("does not let completed end the exchange before turn three", async () => {
     const eagerProvider: PersonaProvider = {
       async generate() {
-        return {
+        return modelDraft({
           actions: [{ kind: "text", body: "okay" }],
-          interestChange: "same",
-          boundary: "none",
           terminalReason: "completed",
-        };
+        });
       },
     };
     const service = new PersonaService(
@@ -326,12 +342,16 @@ describe("adaptive persona service", () => {
   it("does not overwrite a turn-six boundary with completed", async () => {
     const provider: PersonaProvider = {
       async generate({ turn }) {
-        return {
+        return modelDraft({
           actions: [{ kind: "text", body: "okay" }],
-          interestChange: "same",
+          move:
+            turn === 6
+              ? "close"
+              : turn % 2 === 0
+                ? "pivot"
+                : "reveal",
           boundary: turn === 6 ? "explicit" : "none",
-          terminalReason: null,
-        };
+        });
       },
     };
     const service = new PersonaService(
@@ -347,5 +367,202 @@ describe("adaptive persona service", () => {
         expect(result.reply.terminalReason).toBe("boundary");
       }
     }
+  });
+
+  it("blocks the RC-035 validate-and-question loop on consecutive turns", async () => {
+    const provider: PersonaProvider = {
+      async generate({ turn }) {
+        if (turn === 1) {
+          return modelDraft({
+            actions: [
+              {
+                kind: "text",
+                body: "that commute was brutal. what helped you get through it?",
+              },
+            ],
+            move: "reveal",
+            contribution: "that commute was brutal.",
+          });
+        }
+        return modelDraft({
+          actions: [
+            {
+              kind: "text",
+              body: "debugging sounds intense. what kind of bug was it?",
+            },
+          ],
+          move: "tease",
+          contribution: "debugging sounds intense.",
+        });
+      },
+    };
+    const service = new PersonaService(
+      new PersonaConversationStore(),
+      provider,
+    );
+
+    const first = await service.respond(
+      request(
+        "attempt-rc035-question-loop",
+        "RC-035",
+        1,
+        "lowk i just keep going till it clicks",
+      ),
+    );
+    expect(first).toMatchObject({
+      ok: true,
+      usedFallback: false,
+      reply: {
+        move: "reveal",
+        state: { questionStreak: 1 },
+      },
+    });
+
+    const second = await service.respond(
+      request(
+        "attempt-rc035-question-loop",
+        "RC-035",
+        2,
+        "mostly work stuff, i do software engineering",
+      ),
+    );
+    expect(second).toMatchObject({
+      ok: true,
+      usedFallback: true,
+      reply: {
+        state: { questionStreak: 0 },
+      },
+    });
+    if (second.ok) {
+      expect(
+        second.reply.actions
+          .filter((action) => action.kind === "text")
+          .map((action) => action.body)
+          .join(" "),
+      ).not.toContain("?");
+    }
+  });
+
+  it("rejects question-only replies that contribute no new handle", async () => {
+    const service = new PersonaService(new PersonaConversationStore(), {
+      async generate() {
+        return modelDraft({
+          actions: [{ kind: "text", body: "tell me what happened next" }],
+          move: "pivot",
+          contribution: "tell me what happened next",
+        });
+      },
+    });
+
+    const result = await service.respond(
+      request("attempt-question-only", "RC-035"),
+    );
+    expect(result).toMatchObject({ ok: true, usedFallback: true });
+  });
+
+  it("tracks move diversity, energy, and delayed callback seeds", async () => {
+    const provider: PersonaProvider = {
+      async generate({ turn }) {
+        if (turn === 1) {
+          return modelDraft({
+            actions: [
+              {
+                kind: "text",
+                body: "naps are basically a reset button.",
+              },
+            ],
+            move: "reveal",
+            contribution: "naps are basically a reset button.",
+            energyChange: "up",
+            callbackSeed: "50% buff",
+          });
+        }
+        return modelDraft({
+          actions: [
+            {
+              kind: "text",
+              body: "“50% buff” is such an engineer way to describe a nap.",
+            },
+          ],
+          move: "callback",
+          contribution:
+            "“50% buff” is such an engineer way to describe a nap.",
+          callbackUsed: "50% buff",
+        });
+      },
+    };
+    const store = new PersonaConversationStore();
+    const service = new PersonaService(store, provider);
+
+    const first = await service.respond(
+      request(
+        "attempt-rc035-callback",
+        "RC-035",
+        1,
+        "i nap and come back with a 50% buff",
+      ),
+    );
+    expect(first).toMatchObject({
+      ok: true,
+      usedFallback: false,
+      reply: {
+        move: "reveal",
+        state: {
+          energy: "high",
+          recentMoves: ["reveal"],
+          callbackSeeds: ["50% buff"],
+        },
+      },
+    });
+
+    const second = await service.respond(
+      request(
+        "attempt-rc035-callback",
+        "RC-035",
+        2,
+        "exactly lol",
+      ),
+    );
+    expect(second).toMatchObject({
+      ok: true,
+      usedFallback: false,
+      reply: {
+        move: "callback",
+        state: {
+          energy: "high",
+          recentMoves: ["reveal", "callback"],
+          callbackSeeds: ["50% buff"],
+        },
+      },
+    });
+  });
+
+  it("rejects repeated primary moves and falls back to a different move", async () => {
+    const service = new PersonaService(new PersonaConversationStore(), {
+      async generate() {
+        return modelDraft({
+          actions: [{ kind: "text", body: "i have a story like that too." }],
+          move: "reveal",
+          contribution: "i have a story like that too.",
+        });
+      },
+    });
+
+    const first = await service.respond(
+      request("attempt-move-variety", "RC-035", 1, "that was my day"),
+    );
+    const second = await service.respond(
+      request("attempt-move-variety", "RC-035", 2, "same thing tomorrow"),
+    );
+    expect(first).toMatchObject({
+      ok: true,
+      usedFallback: false,
+      reply: { move: "reveal" },
+    });
+    expect(second).toMatchObject({
+      ok: true,
+      usedFallback: true,
+      reply: { move: "pivot" },
+    });
   });
 });

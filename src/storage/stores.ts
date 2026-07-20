@@ -140,6 +140,24 @@ export const attemptSchema = z
       engagement: z.enum(["closed", "low", "neutral", "warm"]),
       boundary: z.enum(["none", "soft", "explicit"]),
       terminal: z.boolean(),
+      energy: z.enum(["low", "matched", "high"]).default("matched"),
+      recentMoves: z
+        .array(
+          z.enum([
+            "reveal",
+            "tease",
+            "challenge",
+            "callback",
+            "pivot",
+            "close",
+          ]),
+        )
+        .max(3)
+        .default([]),
+      questionStreak: z
+        .union([z.literal(0), z.literal(1)])
+        .default(0),
+      callbackSeeds: z.array(z.string().min(2).max(80)).max(4).default([]),
     }),
     startedAt: z.string(),
     completedAt: z.string().optional(),

@@ -176,6 +176,7 @@ describe("hard gates and server-owned arithmetic", () => {
           delayMs: 80,
         },
       ],
+      move: "close",
       interestChange: "up",
       state: { engagement: "warm", boundary: "none", terminal: false },
       terminalReason: null,

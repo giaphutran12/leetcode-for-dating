@@ -12,6 +12,12 @@ import {
   MAX_CONVERSATION_TURNS,
   MAX_RESPONSE_LENGTH,
 } from "../domain/constants";
+import {
+  advancePersonaPolicyState,
+  nextFallbackMove,
+  normalizePersonaState,
+  personaTextHasQuestion,
+} from "./personaPolicy";
 
 function normalize(value: string): string {
   return value
@@ -60,17 +66,37 @@ export function authoredFallbackReply(input: {
 }): PersonaReply {
   const { scenario, turn, personaState } = input;
   const fallbackTurn = Math.min(turn, 3) as 1 | 2 | 3;
+  const policyState = normalizePersonaState(personaState);
+  const replies = scenario.fallback.repliesByTurn[fallbackTurn];
+  const candidates = [
+    replies[personaState.engagement],
+    replies.neutral,
+    replies.low,
+    replies.closed,
+  ];
   const reply =
-    scenario.fallback.repliesByTurn[fallbackTurn][personaState.engagement];
+    policyState.questionStreak === 1
+      ? candidates.find((candidate) => !personaTextHasQuestion(candidate)) ??
+        replies.low
+      : candidates[0];
+  const terminal = turn === MAX_CONVERSATION_TURNS;
+  const move = nextFallbackMove(policyState, terminal);
+  const nextPolicyState = advancePersonaPolicyState({
+    current: policyState,
+    move,
+    text: reply,
+    energyChange: "same",
+  });
   return {
     actions: [{ kind: "text", body: reply, delayMs: 180 }],
+    move,
     state: {
-      ...personaState,
-      terminal: turn === MAX_CONVERSATION_TURNS,
+      ...policyState,
+      ...nextPolicyState,
+      terminal,
     },
     interestChange: "same",
-    terminalReason:
-      turn === MAX_CONVERSATION_TURNS ? "completed" : null,
+    terminalReason: terminal ? "completed" : null,
   };
 }
 

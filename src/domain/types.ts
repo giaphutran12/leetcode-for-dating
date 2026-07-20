@@ -6,6 +6,14 @@ export type BoundaryState = "none" | "soft" | "explicit";
 export type ConversationTurn = 1 | 2 | 3 | 4 | 5 | 6;
 export type ConversationTurnCount = 0 | ConversationTurn;
 export type MessageDeliveryStatus = "sent" | "delivered" | "seen";
+export type ConversationEnergy = "low" | "matched" | "high";
+export type PersonaConversationMove =
+  | "reveal"
+  | "tease"
+  | "challenge"
+  | "callback"
+  | "pivot"
+  | "close";
 
 export type CriterionId =
   | "context_naturalness"
@@ -34,6 +42,10 @@ export interface PersonaState {
   engagement: Engagement;
   boundary: BoundaryState;
   terminal: boolean;
+  energy?: ConversationEnergy;
+  recentMoves?: PersonaConversationMove[];
+  questionStreak?: 0 | 1;
+  callbackSeeds?: string[];
 }
 
 export interface PersonaDefinition {
@@ -77,6 +89,7 @@ export interface Scenario {
 
 export interface PersonaReply {
   actions: PersonaAction[];
+  move: PersonaConversationMove;
   state: PersonaState;
   interestChange: "down" | "same" | "up";
   terminalReason:

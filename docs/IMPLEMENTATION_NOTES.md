@@ -14,9 +14,20 @@ scenario identities.
 Production persona generation uses Vercel AI SDK v6, the direct OpenAI
 provider, Zod, `generateText()`, and `Output.object()`. `gpt-5.4-nano` is the
 default low-latency persona model. Structured actions require at least one short
-text bubble and optional allowlisted emoji reactions. The prompt requests at
-most one question. Boundary state is monotonic and engagement moves at most one
-level.
+text bubble and optional allowlisted emoji reactions. Each turn must identify
+one primary move: reveal, tease, challenge, callback, pivot, or close. It must
+also return an exact non-question excerpt from its text that proves it added a
+new conversational handle. The server rejects repeated primary moves,
+question-only replies, more than one question, and a question immediately
+after another persona question. Authored fallback selection observes the same
+question limit and alternates its move label.
+
+Persona state tracks bounded energy, the three most recent moves, whether the
+last persona turn asked a question, and up to four exact callback seeds copied
+from user text. Engagement remains the interest signal, boundary state remains
+monotonic, and engagement moves at most one level. This short-horizon policy is
+part of the signed canonical conversation. It does not add Mastra or
+cross-session agent memory.
 Server-owned stop gates intercept blatant directed sexual pressure, coercion,
 threats, and continued solicitation before persona generation. Those turns
 receive a firm explicit boundary, close immediately, and cannot be rewarded by

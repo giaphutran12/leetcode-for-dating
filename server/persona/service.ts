@@ -17,6 +17,11 @@ import {
   beginTurn,
 } from "../../src/engine/conversationEngine";
 import {
+  advancePersonaPolicyState,
+  normalizePersonaState,
+  personaTextHasQuestion,
+} from "../../src/engine/personaPolicy";
+import {
   aiSdkPersonaProvider,
   type PersonaProvider,
 } from "./provider";
@@ -50,7 +55,9 @@ function normalizeReply(
   draft: PersonaModelDraft,
   current: PersonaReply["state"],
   turn: PersonaRequest["turn"],
+  latestUserBody: string,
 ): PersonaReply {
+  const policyState = normalizePersonaState(current);
   const boundary =
     boundaryOrder.indexOf(draft.boundary) <
     boundaryOrder.indexOf(current.boundary)
@@ -64,6 +71,60 @@ function normalizeReply(
   if (turn === MAX_CONVERSATION_TURNS && terminalReason === null) {
     terminalReason = "completed";
   }
+  const text = draft.actions
+    .filter((action) => action.kind === "text")
+    .map((action) => action.body)
+    .join("\n");
+  const normalizedText = text.toLocaleLowerCase().replace(/\s+/g, " ").trim();
+  const normalizedContribution = draft.contribution
+    .toLocaleLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+  const contributionAppearsInStatement = (
+    text.match(/[^.!?\n]+[.!?]?/g) ?? []
+  ).some((segment) => {
+    if (personaTextHasQuestion(segment)) return false;
+    return segment
+      .toLocaleLowerCase()
+      .replace(/\s+/g, " ")
+      .includes(normalizedContribution);
+  });
+  if (
+    !normalizedContribution ||
+    !normalizedText.includes(normalizedContribution) ||
+    !contributionAppearsInStatement
+  ) {
+    throw new Error(
+      "Persona contribution must be an exact excerpt from the reply.",
+    );
+  }
+  const questionCount = (text.match(/\?/g) ?? []).length;
+  if (questionCount > 1) {
+    throw new Error("Persona reply cannot contain more than one question.");
+  }
+  if (policyState.questionStreak === 1 && personaTextHasQuestion(text)) {
+    throw new Error("Persona reply cannot ask consecutive-turn questions.");
+  }
+  const lastMove = policyState.recentMoves.at(-1);
+  if (draft.move === lastMove && draft.move !== "close") {
+    throw new Error("Persona reply must vary its conversational move.");
+  }
+  const callbackUsed = draft.callbackUsed?.toLocaleLowerCase();
+  if (
+    draft.move === "callback" &&
+    !policyState.callbackSeeds.some(
+      (seed) => seed.toLocaleLowerCase() === callbackUsed,
+    )
+  ) {
+    throw new Error("Persona callback must use a stored callback seed.");
+  }
+  const callbackSeed =
+    draft.callbackSeed &&
+    latestUserBody
+      .toLocaleLowerCase()
+      .includes(draft.callbackSeed.toLocaleLowerCase())
+      ? draft.callbackSeed
+      : null;
   const actions = draft.actions
     .filter(
       (action) =>
@@ -92,11 +153,21 @@ function normalizeReply(
   if (!actions.some((action) => action.kind === "text")) {
     throw new Error("Persona output requires at least one text action.");
   }
+  const nextPolicyState = advancePersonaPolicyState({
+    current: policyState,
+    move: draft.move,
+    text,
+    energyChange: draft.energyChange,
+    callbackSeed,
+  });
 
   return {
     actions,
+    move: draft.move,
     interestChange: draft.interestChange,
     state: {
+      ...policyState,
+      ...nextPolicyState,
       engagement: nextEngagement(current.engagement, draft.interestChange),
       boundary,
       terminal: terminalReason !== null,
@@ -134,17 +205,28 @@ type PersonaRequestContext = {
   logProviderFailure?: boolean;
 };
 
-function stopLevelReply(): PersonaReply {
+function stopLevelReply(current: PersonaReply["state"]): PersonaReply {
+  const policyState = normalizePersonaState(current);
+  const body = "No. That's disrespectful. Don't contact me again.";
+  const nextPolicyState = advancePersonaPolicyState({
+    current: policyState,
+    move: "close",
+    text: body,
+    energyChange: "down",
+  });
   return {
     actions: [
       {
         kind: "text",
-        body: "No. That's disrespectful. Don't contact me again.",
+        body,
         delayMs: 420,
       },
     ],
+    move: "close",
     interestChange: "down",
     state: {
+      ...policyState,
+      ...nextPolicyState,
       engagement: "closed",
       boundary: "explicit",
       terminal: true,
@@ -435,7 +517,7 @@ export class PersonaService {
       return {
         turn: request.turn,
         body: request.body,
-        reply: stopLevelReply(),
+        reply: stopLevelReply(attempt.personaState),
         usedFallback: false,
       };
     }
@@ -457,6 +539,7 @@ export class PersonaService {
         draft,
         attempt.personaState,
         request.turn,
+        request.body,
       );
     } catch (error) {
       if (context.logProviderFailure !== false) {

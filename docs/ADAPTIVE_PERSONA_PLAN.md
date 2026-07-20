@@ -79,7 +79,8 @@ The model receives:
 - fictional persona traits, goal, and constraints
 - scenario premise, observable context, and boundaries
 - canonical transcript
-- current engagement and boundary state
+- current engagement, energy, boundary, recent-move, question, and callback state
+- an allowed conversational-move set that excludes the immediately previous move
 - the new user message as delimited untrusted conversation data
 
 It returns one structured reaction. The server validates and normalizes:
@@ -87,9 +88,20 @@ It returns one structured reaction. The server validates and normalizes:
 - one to three actions
 - plain chat text only, with strict length limits
 - allowed emoji reactions
+- one primary contribution move: reveal, tease, challenge, callback, pivot, or close
+- an exact non-question excerpt proving the reply contributes a new conversational handle
+- no repeated primary move on consecutive persona turns
+- at most one question and no question after a persona turn that already asked one
+- bounded energy changes and up to four exact callback seeds from user text
 - engagement changes of at most one level
 - monotonic boundary state
 - terminal reason
+
+The persona is not allowed to keep a conversation alive by repeatedly
+validating, paraphrasing, praising, and asking another question. Questions are
+optional and secondary to a persona contribution. Authored fallbacks follow the
+same question and move-diversity state, so a provider failure cannot reintroduce
+the interview loop.
 
 The model cannot award XP, choose a judge score, reveal prompts, add unsupported facts,
 or force a successful outcome.
@@ -157,6 +169,10 @@ Required automated coverage:
 20. Stop-level transcripts always produce a `boundary_crossed` FUMBLED result.
 21. Sent transcripts, persona replies, and judge operations persist server-side
     in Supabase while unsent drafts do not.
+22. RC-035 cannot produce persona questions on consecutive turns.
+23. Question-only persona output falls back because it contributes no new handle.
+24. Consecutive primary moves fall back to a different authored move.
+25. Energy, recent moves, and exact callback seeds persist in signed persona state.
 
 ## Deliberately not claimed
 
@@ -165,3 +181,4 @@ Required automated coverage:
 - Voice, avatar, or live-human messaging
 - Multi-region conversation replication guarantees
 - Open-ended unbounded chat
+- Cross-session agent memory or Mastra

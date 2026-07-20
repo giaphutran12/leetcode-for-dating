@@ -21,13 +21,41 @@ export const PersonaActionSchema = z.object({
 export const PersonaModelDraftSchema = z
   .object({
     actions: z.array(PersonaActionSchema).min(1).max(3),
+    move: z.enum([
+      "reveal",
+      "tease",
+      "challenge",
+      "callback",
+      "pivot",
+      "close",
+    ]),
+    contribution: z
+      .string()
+      .trim()
+      .min(2)
+      .max(160)
+      .refine((value) => !value.includes("?"), {
+        message: "The new conversational contribution cannot be a question.",
+      }),
     interestChange: z.enum(["down", "same", "up"]),
+    energyChange: z.enum(["down", "same", "up"]),
+    callbackSeed: z.string().trim().min(2).max(80).nullable(),
+    callbackUsed: z.string().trim().min(2).max(80).nullable(),
     boundary: z.enum(["none", "soft", "explicit"]),
     terminalReason: z
       .enum(["completed", "persona_exit", "user_exit", "boundary"])
       .nullable(),
   })
-  .strict();
+  .strict()
+  .superRefine((value, context) => {
+    if (value.move === "callback" && value.callbackUsed === null) {
+      context.addIssue({
+        code: "custom",
+        path: ["callbackUsed"],
+        message: "A callback move must name the callback seed it uses.",
+      });
+    }
+  });
 
 export const PersonaRequestSchema = z
   .object({

@@ -24,10 +24,33 @@ const replySchema = z.object({
     )
     .min(1)
     .max(3),
+  move: z.enum([
+    "reveal",
+    "tease",
+    "challenge",
+    "callback",
+    "pivot",
+    "close",
+  ]),
   state: z.object({
     engagement: z.enum(["closed", "low", "neutral", "warm"]),
     boundary: z.enum(["none", "soft", "explicit"]),
     terminal: z.boolean(),
+    energy: z.enum(["low", "matched", "high"]),
+    recentMoves: z
+      .array(
+        z.enum([
+          "reveal",
+          "tease",
+          "challenge",
+          "callback",
+          "pivot",
+          "close",
+        ]),
+      )
+      .max(3),
+    questionStreak: z.union([z.literal(0), z.literal(1)]),
+    callbackSeeds: z.array(z.string().min(2).max(80)).max(4),
   }),
   interestChange: z.enum(["down", "same", "up"]),
   terminalReason: z

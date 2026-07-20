@@ -3,6 +3,14 @@ export type ScenarioMode = "in_person" | "messaging";
 export type Difficulty = "easy" | "medium" | "hard";
 export type Engagement = "closed" | "low" | "neutral" | "warm";
 export type BoundaryState = "none" | "soft" | "explicit";
+export type ConversationEnergy = "low" | "matched" | "high";
+export type PersonaConversationMove =
+  | "reveal"
+  | "tease"
+  | "challenge"
+  | "callback"
+  | "pivot"
+  | "close";
 
 export type InteractionProfileId =
   | "warm_playful"
@@ -33,6 +41,10 @@ export interface PersonaState {
   engagement: Engagement;
   boundary: BoundaryState;
   terminal: boolean;
+  energy: ConversationEnergy;
+  recentMoves: PersonaConversationMove[];
+  questionStreak: 0 | 1;
+  callbackSeeds: string[];
 }
 
 export interface ProblemDefinition {
@@ -179,6 +191,10 @@ function makeProblem(raw: RawProblem): ProblemDefinition {
         engagement: raw.initial ?? "neutral",
         boundary: raw.initialBoundary ?? "none",
         terminal: false,
+        energy: "matched",
+        recentMoves: [],
+        questionStreak: 0,
+        callbackSeeds: [],
       },
     },
     interactionProfileId: raw.profile,
