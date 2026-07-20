@@ -32,8 +32,8 @@ Server-owned stop gates intercept blatant directed sexual pressure, coercion,
 threats, and continued solicitation before persona generation. Those turns
 receive a firm explicit boundary, close immediately, and cannot be rewarded by
 model-generated flirting or continued logistics.
-Provider failure records a visible authored fallback instead of pretending the
-model replied.
+Provider failure records an authored fallback so the attempt remains playable.
+The UI does not expose internal provider or fallback details to the learner.
 
 The browser calls `POST /api/judge` with one to six contiguous user responses.
 Judgment is available after turn three, at the six-turn cap, or after a persona,

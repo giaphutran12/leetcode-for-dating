@@ -419,12 +419,6 @@ export function PracticeView({ scenario }: { scenario: Scenario }) {
             )}
           </div>
 
-          {session.fallbackNotice && (
-            <p className="rizz-inline-notice" role="status">
-              {session.fallbackNotice}
-            </p>
-          )}
-
           {attempt.status === "error" ? (
             <div
               className={`rizz-judge-error${practiceLimitReached ? " rizz-judge-error--upgrade" : ""}`}

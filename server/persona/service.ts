@@ -63,7 +63,6 @@ function normalizeReply(
       ? { ...action, body: cleanModelCopy(action.body) }
       : action,
   );
-  const cleanedContribution = cleanModelCopy(draft.contribution);
   const policyState = normalizePersonaState(current);
   const boundary =
     boundaryOrder.indexOf(draft.boundary) <
@@ -82,28 +81,15 @@ function normalizeReply(
     .filter((action) => action.kind === "text")
     .map((action) => action.body)
     .join("\n");
-  const normalizedText = text.toLocaleLowerCase().replace(/\s+/g, " ").trim();
-  const normalizedContribution = cleanedContribution
-    .toLocaleLowerCase()
-    .replace(/\s+/g, " ")
-    .trim();
-  const contributionAppearsInStatement = (
+  const hasStatementContribution = (
     text.match(/[^.!?\n]+[.!?]?/g) ?? []
-  ).some((segment) => {
-    if (personaTextHasQuestion(segment)) return false;
-    return segment
-      .toLocaleLowerCase()
-      .replace(/\s+/g, " ")
-      .includes(normalizedContribution);
-  });
-  if (
-    !normalizedContribution ||
-    !normalizedText.includes(normalizedContribution) ||
-    !contributionAppearsInStatement
-  ) {
-    throw new Error(
-      "Persona contribution must be an exact excerpt from the reply.",
-    );
+  ).some(
+    (segment) =>
+      segment.replace(/[.!?\s]/g, "").length > 0 &&
+      !personaTextHasQuestion(segment),
+  );
+  if (!hasStatementContribution) {
+    throw new Error("Persona reply requires a non-question contribution.");
   }
   const questionCount = (text.match(/\?/g) ?? []).length;
   if (questionCount > 1) {

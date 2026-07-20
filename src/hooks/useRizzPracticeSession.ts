@@ -59,7 +59,6 @@ export function useRizzPracticeSession(scenario: Scenario) {
   );
   const [input, setInput] = useState("");
   const [inputError, setInputError] = useState<string>();
-  const [fallbackNotice, setFallbackNotice] = useState<string>();
   const [draftPreparing, setDraftPreparing] = useState(false);
   const [receipt, setReceipt] = useState<JudgmentReceipt>();
   const busyRef = useRef(false);
@@ -294,11 +293,6 @@ export function useRizzPracticeSession(scenario: Scenario) {
         commitAttempt(conversationAttempt);
       }
 
-      setFallbackNotice(
-        apiResult.usedFallback
-          ? "The AI reaction failed, so this turn used its authored fallback."
-          : undefined,
-      );
       const next = await revealReply(
         conversationAttempt,
         apiResult.reply,
@@ -419,7 +413,6 @@ export function useRizzPracticeSession(scenario: Scenario) {
     commitAttempt(next);
     setInput("");
     setInputError(undefined);
-    setFallbackNotice(undefined);
     setReceipt(undefined);
   }, [commitAttempt, scenario]);
 
@@ -427,7 +420,6 @@ export function useRizzPracticeSession(scenario: Scenario) {
     attempt,
     input,
     inputError,
-    fallbackNotice,
     receipt,
     setInput,
     submit,

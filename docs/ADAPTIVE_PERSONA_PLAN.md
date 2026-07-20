@@ -110,8 +110,8 @@ or force a successful outcome.
 
 If the persona provider is missing, times out, rate limits, or returns invalid output,
 the server records the authored scenario fallback as the canonical reaction and returns
-`usedFallback: true`. The UI labels that specific reaction as a fallback. The attempt
-remains playable.
+`usedFallback: true` for observability. The attempt remains playable without exposing
+internal provider or fallback details in the learner UI.
 
 Judge failure behavior is unchanged: the transcript remains visible and retryable, no
 score is official, and no XP is awarded.

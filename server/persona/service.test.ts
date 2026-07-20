@@ -218,6 +218,39 @@ describe("adaptive persona service", () => {
     expect(result).toMatchObject({ ok: true, usedFallback: true });
   });
 
+  it("uses the actual reply when contribution metadata does not match", async () => {
+    const service = new PersonaService(new PersonaConversationStore(), {
+      async generate() {
+        return modelDraft({
+          actions: [
+            {
+              kind: "text",
+              body: "I know the host from work. The team chat is chaos.",
+            },
+          ],
+          contribution: "A different summary that is not in the reply.",
+        });
+      },
+    });
+
+    const result = await service.respond(
+      request("attempt-contribution-mismatch", "RC-005", 1, "ayyo waht up"),
+    );
+
+    expect(result).toMatchObject({
+      ok: true,
+      usedFallback: false,
+      reply: {
+        actions: [
+          {
+            kind: "text",
+            body: "I know the host from work. The team chat is chaos.",
+          },
+        ],
+      },
+    });
+  });
+
   it("prepares an idle draft without committing and reuses it on send", async () => {
     let calls = 0;
     const provider: PersonaProvider = {

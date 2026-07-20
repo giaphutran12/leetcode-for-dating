@@ -163,6 +163,62 @@ test("reset invalidates an in-flight persona reaction", async ({ page }) => {
   await expect(page.getByText(/Maya says/i)).toHaveCount(0);
 });
 
+test("authored fallback stays playable without exposing provider internals", async ({
+  page,
+}) => {
+  await page.route("**/api/persona", async (route) => {
+    const request = route.request().postDataJSON() as {
+      attemptId: string;
+      scenarioId: string;
+      turn: number;
+    };
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        ok: true,
+        attemptId: request.attemptId,
+        scenarioId: request.scenarioId,
+        turn: request.turn,
+        reply: {
+          actions: [
+            {
+              kind: "text",
+              body: "Yeah, I know the host from work.",
+              delayMs: 180,
+            },
+          ],
+          move: "reveal",
+          state: {
+            engagement: "neutral",
+            boundary: "none",
+            terminal: false,
+            energy: "matched",
+            recentMoves: ["reveal"],
+            questionStreak: 0,
+            callbackSeeds: [],
+          },
+          interestChange: "same",
+          terminalReason: null,
+        },
+        usedFallback: true,
+        sessionToken: "x".repeat(80),
+      }),
+    });
+  });
+
+  await page.goto("/practice/RC-005");
+  await page.getByRole("button", { name: /start conversation/i }).click();
+  await page.getByLabel("What would you say?").fill("ayyo waht up");
+  await page.getByRole("button", { name: /send response/i }).click();
+
+  await expect(
+    page.getByText("Yeah, I know the host from work."),
+  ).toBeVisible();
+  await expect(page.getByText(/AI reaction failed/i)).toHaveCount(0);
+  await expect(page.getByLabel("What would you say?")).toBeVisible();
+});
+
 test("non-retryable persona conflicts require a clean reset", async ({ page }) => {
   await page.route("**/api/persona", async (route) => {
     await route.fulfill({
