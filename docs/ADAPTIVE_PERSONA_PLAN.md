@@ -138,7 +138,7 @@ score is official, and no XP is awarded.
 The judge:
 
 - reads the server-owned persona transcript
-- cites exact excerpts only from user turns
+- references real user turns while the server attaches canonical transcript text
 - preserves the five-part rubric and deterministic arithmetic
 - lets the judge model classify safety from the full transcript while the
   server enforces evidence, caps, and arithmetic

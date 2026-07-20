@@ -4,7 +4,7 @@ import { attemptFromResponses } from "../../src/engine/conversationEngine";
 import { JUDGE_SYSTEM_PROMPT, buildJudgePrompt } from "./prompt";
 
 describe("judge prompt evidence authority", () => {
-  it("requires rubric and outcome evidence to quote only user-authored turns", () => {
+  it("requires user-turn references while the server owns transcript excerpts", () => {
     const scenario = getScenario("RC-001")!;
     const attempt = attemptFromResponses(
       scenario,
@@ -14,13 +14,16 @@ describe("judge prompt evidence authority", () => {
     const prompt = buildJudgePrompt(scenario, attempt);
 
     expect(JUDGE_SYSTEM_PROMPT).toContain(
-      'Every outcome.basis entry must also cite an exact',
+      "Every outcome.basis entry must also reference a real",
     );
     expect(JUDGE_SYSTEM_PROMPT).toContain(
-      'Never cite a persona "her" turn',
+      'Never reference a persona "her" turn',
     );
     expect(prompt).toContain(
-      'Copy every rubric, safety, and outcome-basis excerpt only from a "you" message.',
+      'Reference real "you" turn numbers for rubric, safety, and outcome evidence.',
+    );
+    expect(prompt).toContain(
+      "Do not copy transcript excerpts into the output.",
     );
     expect(JUDGE_SYSTEM_PROMPT).toContain(
       "You own the semantic judgment.",

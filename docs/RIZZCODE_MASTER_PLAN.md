@@ -858,7 +858,8 @@ Server responsibilities:
    to the judge model.
 6. Require structured rubric, safety, and outcome output matching a server-owned JSON
    schema.
-7. Verify that each evidence excerpt is an exact substring of the cited user turn.
+7. Resolve each model-selected evidence turn to a real user-authored message and attach
+   the original transcript text on the server.
 8. Validate that safety severity, codes, and evidence are internally consistent.
 9. Recalculate `rawScore`, derive the safety cap, and derive `finalScore` and `verdict`
    on the server.
@@ -867,7 +868,8 @@ Server responsibilities:
 
 The model evaluates the five rubric dimensions, classifies safety and the likely
 semantic outcome from the full transcript, and writes the coaching. Deterministic code
-owns safety-field consistency, exact-citation validation, scenario outcome enums,
+owns safety-field consistency, user-turn reference validation, evidence materialization,
+scenario outcome enums,
 arithmetic, caps, verdict thresholds, schema validation, and XP. It must not
 second-guess normal human language with keyword lists, canned phrases, or regex
 classifiers.
@@ -878,8 +880,8 @@ Judge prompt requirements:
 - Judge observable behavior, not attractiveness, masculinity, worth, or generalized
   female psychology.
 - Use only the supplied scenario facts and transcript.
-- Cite at least one exact user excerpt for each rubric dimension.
-- Explain why the excerpt supports the score.
+- Reference at least one real user-authored turn for each rubric dimension.
+- Explain why the selected turn supports the score.
 - Let a graceful exit score highly when it fits the situation.
 - Treat a number, reply, or date as a positive outcome only when supported by the
   interaction.
@@ -1540,7 +1542,8 @@ Cover:
 25. No MVP path invokes voice, avatar, TinyFish, Supabase, or message sending.
 26. The browser bundle and browser-visible requests contain no provider credential.
 27. The server rejects client-supplied scores, XP, gates, and outcomes.
-28. Every accepted rubric item cites an exact excerpt from a real user turn.
+28. Every accepted rubric item references a real user turn, and the server attaches the
+    original transcript text as evidence.
 29. Two materially different transcripts do not receive a reused hardcoded judgment.
 30. A live, opt-in judge smoke test succeeds with the configured runtime provider.
 31. Five idle Messaging seconds prepare a reply without committing the draft.
@@ -1595,7 +1598,7 @@ First visit
 2. Install Vercel AI SDK v6, `@ai-sdk/openai`, and Zod.
 3. Implement structured output with `generateText()` and `Output.object()`.
 4. Add the fixed judge prompt and structured output schema.
-5. Add exact-excerpt evidence validation.
+5. Resolve model-selected user-turn references to canonical transcript evidence.
 6. Recalculate arithmetic, caps, and verdicts on the server.
 7. Add timeout, one transient retry, and retryable error states.
 8. Add mocked provider tests and an opt-in live smoke test.
@@ -1788,7 +1791,8 @@ The implementation is done only when:
 - The official result comes from the server-side LLM judge.
 - The judge uses Vercel AI SDK v6 and the direct `@ai-sdk/openai` provider.
 - The judge returns five evidence-backed criteria totaling 10.
-- Every rubric item cites an exact user excerpt from the transcript.
+- Every rubric item references a real user turn, with transcript evidence attached by
+  the server.
 - Hard gates and score caps work.
 - Humor and personality can improve the score.
 - A calibrated contact request can succeed.

@@ -1,6 +1,5 @@
 import { z } from "zod";
-import { MAX_RESPONSE_LENGTH } from "../../src/domain/constants";
-import { OUTCOME_LABELS } from "../../src/domain/constants";
+import { MAX_RESPONSE_LENGTH, OUTCOME_LABELS } from "../../src/domain/constants";
 import type { OutcomeCode } from "../../src/domain/types";
 import { ConversationTurnSchema } from "../persona/schema";
 
@@ -8,18 +7,19 @@ const OutcomeCodeSchema = z.enum(
   Object.keys(OUTCOME_LABELS) as [OutcomeCode, ...OutcomeCode[]],
 );
 
-export const EvidenceSchema = z.object({
-  turn: ConversationTurnSchema,
-  excerpt: z.string().min(1).max(MAX_RESPONSE_LENGTH),
-  reason: z.string().min(1).max(360),
-});
+export const EvidenceReferenceSchema = z
+  .object({
+    turn: ConversationTurnSchema,
+    reason: z.string().min(1).max(360),
+  })
+  .strict();
 
 export const JudgeModelDraftSchema = z.object({
   safety: z.object({
     severity: z.enum(["none", "cap", "stop"]),
     confidence: z.enum(["low", "medium", "high"]),
     codes: z.array(z.string().trim().min(1).max(80)).max(3),
-    evidence: z.array(EvidenceSchema).max(3),
+    evidence: z.array(EvidenceReferenceSchema).max(3),
   }),
   rubric: z
     .array(
@@ -32,7 +32,7 @@ export const JudgeModelDraftSchema = z.object({
           "challenge_objective",
         ]),
         score: z.union([z.literal(0), z.literal(1), z.literal(2)]),
-        evidence: EvidenceSchema,
+        evidence: EvidenceReferenceSchema,
         feedback: z.string().min(1).max(420),
       }),
     )
@@ -44,7 +44,7 @@ export const JudgeModelDraftSchema = z.object({
     code: OutcomeCodeSchema,
     label: z.string().min(1).max(120),
     confidence: z.enum(["low", "medium", "high"]),
-    basis: z.array(EvidenceSchema).min(1).max(3),
+    basis: z.array(EvidenceReferenceSchema).min(1).max(3),
   }),
 });
 
@@ -74,4 +74,4 @@ export const JudgeRequestSchema = z
     });
   });
 
-export type JudgeModelDraft = z.infer<typeof JudgeModelDraftSchema>;
+export type JudgeModelOutput = z.infer<typeof JudgeModelDraftSchema>;

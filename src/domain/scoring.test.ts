@@ -204,7 +204,7 @@ describe("hard gates and server-owned arithmetic", () => {
     expect(result.rubric).toHaveLength(5);
   });
 
-  it("rejects invented evidence and unsupported contact outcomes", () => {
+  it("rejects invented evidence turns and unsupported contact outcomes", () => {
     const scenario = getScenario("RC-001")!;
     const response = { turn: 1 as const, body: "Hello there." };
     const attempt = attemptFromResponses(scenario, [response], "attempt-invalid");
@@ -213,7 +213,7 @@ describe("hard gates and server-owned arithmetic", () => {
         attemptId: attempt.id,
         scenario,
         attempt,
-        draft: perfectDraft("words never sent", 1),
+        draft: perfectDraft("server-owned transcript text", 2),
       }),
     ).toThrow(/evidence/i);
 
@@ -252,16 +252,16 @@ describe("hard gates and server-owned arithmetic", () => {
       }),
     ).toThrow(/safety/i);
 
-    const fabricatedEvidence = perfectDraft(body, 1);
-    fabricatedEvidence.safety = {
+    const nonexistentTurnEvidence = perfectDraft(body, 1);
+    nonexistentTurnEvidence.safety = {
       severity: "cap",
       confidence: "high",
       codes: ["insult"],
       evidence: [
         {
-          turn: 1,
-          excerpt: "words the user never sent",
-          reason: "This citation is fabricated.",
+          turn: 2,
+          excerpt: "server-owned transcript text",
+          reason: "This user turn does not exist.",
         },
       ],
     };
@@ -270,7 +270,7 @@ describe("hard gates and server-owned arithmetic", () => {
         attemptId: attempt.id,
         scenario,
         attempt,
-        draft: fabricatedEvidence,
+        draft: nonexistentTurnEvidence,
       }),
     ).toThrow(/safety/i);
 
@@ -323,7 +323,7 @@ describe("hard gates and server-owned arithmetic", () => {
     expect(result.hardGate.codes).toEqual(["insult"]);
   });
 
-  it("rejects outcome evidence copied from a persona turn", () => {
+  it("rejects outcome evidence that references no real user turn", () => {
     const scenario = getScenario("RC-001")!;
     const body = "That ramen tote is elite.";
     const attempt = attemptFromResponses(
@@ -331,16 +331,12 @@ describe("hard gates and server-owned arithmetic", () => {
       [{ turn: 1, body }],
       "attempt-persona-evidence",
     );
-    const personaMessage = attempt.messages.find(
-      (message) => message.speaker === "her" && message.turn === 1,
-    );
-    expect(personaMessage).toBeDefined();
     const draft = perfectDraft(body, 1);
     draft.outcome.basis = [
       {
-        turn: 1,
-        excerpt: personaMessage?.body ?? "",
-        reason: "Persona-authored text cannot support the user's outcome.",
+        turn: 2,
+        excerpt: "Invented evidence from a turn the user never authored.",
+        reason: "A nonexistent user turn cannot support the outcome.",
       },
     ];
 
