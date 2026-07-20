@@ -6,16 +6,11 @@ import {
   GoogleLogo,
   LockKey,
   SignOut,
-  Trash,
 } from "@phosphor-icons/react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { BrandLogo } from "@/design-system";
 import { useAuth } from "../../context/AuthContext";
-import {
-  localAccountKeys,
-  safeReturnPath,
-  validatePassword,
-} from "../../lib/auth";
+import { safeReturnPath, validatePassword } from "../../lib/auth";
 import { ProductShell } from "../product/ProductShell";
 import { BillingPanel } from "../billing/BillingPanel";
 
@@ -408,7 +403,6 @@ export function ResetPasswordView() {
 export function AccountView() {
   const auth = useAuth();
   const [error, setError] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
 
   async function signOut() {
     const result = await auth.signOut();
@@ -416,38 +410,6 @@ export function AccountView() {
       setError(result.error);
       return;
     }
-    window.location.assign("/login");
-  }
-
-  async function deleteAccount() {
-    if (
-      !window.confirm(
-        "Delete your RizzCode account and local practice data? This cannot be undone.",
-      )
-    ) {
-      return;
-    }
-    const token = auth.session?.access_token;
-    if (!token) {
-      setError("Your session expired. Log in again before deleting the account.");
-      return;
-    }
-    setDeleting(true);
-    setError(null);
-    const response = await fetch("/api/account", {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!response.ok) {
-      const body = (await response.json().catch(() => null)) as {
-        message?: string;
-      } | null;
-      setError(body?.message ?? "Account deletion failed. Try again.");
-      setDeleting(false);
-      return;
-    }
-    await auth.signOut();
-    for (const key of localAccountKeys) window.localStorage.removeItem(key);
     window.location.assign("/login");
   }
 
@@ -471,14 +433,6 @@ export function AccountView() {
         <div className="rizz-account__actions">
           <button className="rizz-secondary-button" type="button" onClick={signOut}>
             <SignOut size={18} /> Log out
-          </button>
-          <button
-            className="rizz-danger-button"
-            type="button"
-            onClick={deleteAccount}
-            disabled={deleting}
-          >
-            <Trash size={18} /> {deleting ? "Deleting…" : "Delete account"}
           </button>
         </div>
       </section>

@@ -252,6 +252,34 @@
   background: transparent;
 }
 
+.rc-activity-graph__tooltip {
+  position: fixed;
+  z-index: 20;
+  max-width: 240px;
+  padding: var(--rc-space-2) var(--rc-space-3);
+  border: var(--rc-border-width) solid var(--rc-border-default);
+  border-radius: var(--rc-radius-xs);
+  color: var(--rc-text-inverse);
+  background: var(--rc-surface-inverse);
+  font-size: var(--rc-type-body-sm);
+  line-height: 1.35;
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - var(--rc-space-2)));
+  animation: rc-activity-tooltip-in var(--rc-duration-tooltip)
+    var(--rc-ease-standard);
+}
+
+@keyframes rc-activity-tooltip-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-100% - var(--rc-space-1)));
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, calc(-100% - var(--rc-space-2)));
+  }
+}
+
 .rc-activity-graph__footer,
 .rc-activity-graph__legend {
   display: flex;

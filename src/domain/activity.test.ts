@@ -38,6 +38,7 @@ describe("practice activity", () => {
     );
     expect(day).toMatchObject({ count: 2, level: 2 });
     expect(day?.label).toContain("2 completed practice attempts");
+    expect(day?.label).toContain("Nice work.");
     expect(calendar.total).toBe(2);
   });
 

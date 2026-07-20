@@ -173,7 +173,7 @@ export function buildActivityCalendar(
         date: key,
         count,
         level: intensity(count),
-        label: `${dateFormatter.format(date)}: ${attemptLabel}`,
+        label: `${dateFormatter.format(date)}: ${attemptLabel}${count > 0 ? ". Nice work." : ""}`,
         future,
       });
     }

@@ -113,8 +113,16 @@ describe("product view contracts", () => {
       screen.getByRole("heading", { name: "Build the reps." }),
     ).toBeInTheDocument();
     expect(
-      screen.getByLabelText(/2 completed practice attempts/i),
-    ).toBeInTheDocument();
+      screen.queryByRole("button", { name: "Reset progress" }),
+    ).not.toBeInTheDocument();
+    const completedDay = screen.getByLabelText(
+      /2 completed practice attempts/i,
+    );
+    expect(completedDay).toBeInTheDocument();
+    fireEvent.mouseEnter(completedDay);
+    expect(screen.getByRole("tooltip")).toHaveTextContent("Nice work.");
+    fireEvent.mouseLeave(completedDay);
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
     expect(
       screen.getByRole("region", { name: /activity calendar/i }),
     ).toBeInTheDocument();

@@ -12,6 +12,7 @@ import type {
   PersonaRequest,
 } from "../../src/domain/types";
 import { detectHardGates } from "../../src/domain/scoring";
+import { cleanModelCopy } from "../../src/domain/modelCopy";
 import {
   authoredFallbackReply,
   beginTurn,
@@ -57,6 +58,12 @@ function normalizeReply(
   turn: PersonaRequest["turn"],
   latestUserBody: string,
 ): PersonaReply {
+  const cleanedActions = draft.actions.map((action) =>
+    action.kind === "text"
+      ? { ...action, body: cleanModelCopy(action.body) }
+      : action,
+  );
+  const cleanedContribution = cleanModelCopy(draft.contribution);
   const policyState = normalizePersonaState(current);
   const boundary =
     boundaryOrder.indexOf(draft.boundary) <
@@ -71,12 +78,12 @@ function normalizeReply(
   if (turn === MAX_CONVERSATION_TURNS && terminalReason === null) {
     terminalReason = "completed";
   }
-  const text = draft.actions
+  const text = cleanedActions
     .filter((action) => action.kind === "text")
     .map((action) => action.body)
     .join("\n");
   const normalizedText = text.toLocaleLowerCase().replace(/\s+/g, " ").trim();
-  const normalizedContribution = draft.contribution
+  const normalizedContribution = cleanedContribution
     .toLocaleLowerCase()
     .replace(/\s+/g, " ")
     .trim();
@@ -125,7 +132,7 @@ function normalizeReply(
       .includes(draft.callbackSeed.toLocaleLowerCase())
       ? draft.callbackSeed
       : null;
-  const actions = draft.actions
+  const actions = cleanedActions
     .filter(
       (action) =>
         action.kind === "text" || allowedReactions.has(action.body),

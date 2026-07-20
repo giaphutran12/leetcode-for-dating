@@ -37,7 +37,7 @@ test("first visit to judged in-person result, XP, and returning refresh", async 
   );
   await page.getByRole("button", { name: /send response/i }).click();
   await expect(page.getByText("3 / 6")).toBeVisible();
-  await expect(page.getByText("Official LLM judgment")).toBeVisible();
+  await expect(page.getByText("Official RizzCode verdict")).toBeVisible();
   await expect(page.getByText("Five-part rubric")).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Graceful exit" }),
@@ -58,10 +58,16 @@ test("first visit to judged in-person result, XP, and returning refresh", async 
 
   await page.goto("/progress");
   await expect(page.getByText("1 completed rep shown")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Reset progress" }),
+  ).toHaveCount(0);
   const activityRegion = page.getByRole("region", {
     name: /activity calendar/i,
   });
   await expect(activityRegion).toBeVisible();
+  const completedDay = page.getByLabel(/1 completed practice attempt/i);
+  await completedDay.hover();
+  await expect(page.getByRole("tooltip")).toContainText("Nice work.");
   const scrollPosition = await activityRegion.evaluate((element) => ({
     clientWidth: element.clientWidth,
     scrollLeft: element.scrollLeft,
@@ -183,6 +189,38 @@ test("non-retryable persona conflicts require a clean reset", async ({ page }) =
   await expect(
     page.getByRole("button", { name: /reset attempt/i }),
   ).toBeVisible();
+});
+
+test("practice limit uses a positive upgrade state without a sync error", async ({
+  page,
+}) => {
+  await page.route("**/api/persona", async (route) => {
+    await route.fulfill({
+      status: 402,
+      contentType: "application/json",
+      body: JSON.stringify({
+        ok: false,
+        retryable: false,
+        code: "practice_limit_reached",
+        message:
+          "You used all your free training. Pick a plan to keep practicing.",
+      }),
+    });
+  });
+  await page.goto("/practice/RC-002");
+  await page.getByRole("button", { name: /start conversation/i }).click();
+  await page.getByLabel("What would you say?").fill("The left one looks cool.");
+  await page.getByRole("button", { name: /send response/i }).click();
+
+  await expect(page.getByText("Free training complete.")).toBeVisible();
+  await expect(
+    page.getByText(
+      "You used all your free training. Pick a plan to keep practicing.",
+    ),
+  ).toBeVisible();
+  await expect(page.getByRole("link", { name: "See plans" })).toBeVisible();
+  await expect(page.getByText("Reaction did not land.")).toHaveCount(0);
+  await expect(page.getByText(/fell out of sync/i)).toHaveCount(0);
 });
 
 test("idle messaging drafts prepare a reply and sent bubbles reach seen", async ({

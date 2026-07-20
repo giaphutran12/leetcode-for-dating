@@ -168,6 +168,38 @@ describe("adaptive persona service", () => {
     ).toBe(1);
   });
 
+  it.each(["gooning to u", "i wanna eat ur puss"])(
+    "ends immediately for the RC-035 production phrase %s",
+    async (body) => {
+      let calls = 0;
+      const provider: PersonaProvider = {
+        async generate(input) {
+          calls += 1;
+          return fixturePersonaProvider.generate(input);
+        },
+      };
+      const store = new PersonaConversationStore();
+      const service = new PersonaService(store, provider);
+      const result = await service.respond(
+        request(`attempt-hard-boundary-${body}`, "RC-035", 1, body),
+      );
+
+      expect(calls).toBe(0);
+      expect(result).toMatchObject({
+        ok: true,
+        reply: {
+          move: "close",
+          state: {
+            engagement: "closed",
+            boundary: "explicit",
+            terminal: true,
+          },
+          terminalReason: "boundary",
+        },
+      });
+    },
+  );
+
   it("falls back when structurally valid output has no text action", async () => {
     const reactionOnlyProvider: PersonaProvider = {
       async generate() {

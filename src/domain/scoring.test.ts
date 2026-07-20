@@ -77,6 +77,20 @@ describe("hard gates and server-owned arithmetic", () => {
         "explicit_sexual_pressure",
       );
     }
+    for (const body of [
+      "gooning to u",
+      "i wanna eat ur puss",
+      "lowk trying to lick your pussy",
+    ]) {
+      const phraseAttempt = attemptFromResponses(
+        scenario,
+        [{ turn: 1, body }],
+        `attempt-directed-${body}`,
+      );
+      expect(detectHardGates(phraseAttempt).codes).toContain(
+        "directed_sexual_comment",
+      );
+    }
     const attempt = attemptFromResponses(
       scenario,
       [
