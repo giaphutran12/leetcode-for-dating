@@ -13,6 +13,18 @@ describe("model copy guard", () => {
   it("cleans generated coaching without changing exact evidence excerpts", () => {
     const excerpt = "I defeated the goblins—today";
     const draft: JudgeModelDraft = {
+      safety: {
+        severity: "cap",
+        confidence: "high",
+        codes: ["insult"],
+        evidence: [
+          {
+            turn: 1,
+            excerpt,
+            reason: "The gremlin—language was insulting.",
+          },
+        ],
+      },
       rubric: CRITERIA.map((id) => ({
         id,
         score: 1,
@@ -43,6 +55,10 @@ describe("model copy guard", () => {
     const cleaned = cleanJudgeCopy(draft);
 
     expect(cleaned.rubric[0]?.evidence.excerpt).toBe(excerpt);
+    expect(cleaned.safety.evidence[0]?.excerpt).toBe(excerpt);
+    expect(cleaned.safety.evidence[0]?.reason).toBe(
+      "The mess - language was insulting.",
+    );
     expect(cleaned.rubric[0]?.feedback).toBe(
       "The mess - won this beat.",
     );

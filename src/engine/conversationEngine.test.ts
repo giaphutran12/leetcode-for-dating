@@ -4,7 +4,6 @@ import {
   attemptFromResponses,
   beginTurn,
   createAttempt,
-  matchesSignal,
   updateUserMessageDelivery,
   validateResponse,
 } from "./conversationEngine";
@@ -35,12 +34,6 @@ describe("conversation state engine", () => {
     expect(attempt.userTurn).toBe(0);
     expect(attempt.messages).toEqual([]);
     expect(attempt.status).toBe("active");
-  });
-
-  it("matches whole words and phrases, not fragments", () => {
-    expect(matchesSignal("The bus is late", "bus")).toBe(true);
-    expect(matchesSignal("This business is late", "bus")).toBe(false);
-    expect(matchesSignal("Spicy bánh xèo!", "banh xeo")).toBe(true);
   });
 
   it("accepts up to six authored turns and rejects a seventh mutation", () => {

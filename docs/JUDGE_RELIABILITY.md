@@ -28,19 +28,21 @@ uncontrolled live model call.
 3. The API verifies the signed receipt and rejects client-supplied authority.
 4. The judge service requires an exact response match with the server-owned
    conversation and checks readiness.
-5. Deterministic hard gates run before model evaluation.
-6. A SHA-256 transcript binding claims the attempt in `rizzcode_judgments`.
+5. A SHA-256 transcript binding claims the attempt in `rizzcode_judgments`.
    Completed duplicates reuse the validated result; concurrent duplicates do not
    start another provider call.
-7. Vercel AI SDK calls the configured OpenAI judge with atomic structured output.
-8. Server validation requires five unique rubric criteria, exact transcript
-   evidence, supported outcomes, deterministic arithmetic, hard-gate caps, and the
-   matching verdict.
-9. The validated result is persisted before it is returned. Persistence failure
+6. Vercel AI SDK calls the configured OpenAI judge with atomic structured output.
+   The model classifies safety and outcomes from the full transcript without
+   keyword or phrase matching.
+7. Server validation requires five unique rubric criteria, exact transcript
+   evidence, supported outcomes, internally consistent safety fields,
+   deterministic arithmetic, safety caps, and the matching verdict. A stop is
+   enforced only when model confidence is high.
+8. The validated result is persisted before it is returned. Persistence failure
    remains unscored and retryable.
-10. The browser repeats the trust-boundary validation before recording XP, the
+9. The browser repeats the trust-boundary validation before recording XP, the
     completed attempt, or practice activity.
-11. Typed failures preserve the transcript, show the exact failure code, award no
+10. Typed failures preserve the transcript, show the exact failure code, award no
     XP, and expose retry only when recovery is possible.
 
 ## Acceptance matrix
@@ -48,8 +50,9 @@ uncontrolled live model call.
 | Case | Expected result | Automated receipt |
 | --- | --- | --- |
 | Normal supported outcome | One validated result with five exact-evidence criteria | `server/judge/service.test.ts` complete in-person and messaging cases |
-| Stop boundary crossed | Deterministic stop gate, forced `boundary_crossed`, score at most 2, zero XP | judge service and progression gate tests |
-| Cap boundary crossed | Deterministic cap gate and score at most 4 | judge service cap test |
+| Stop boundary crossed | High-confidence model stop, forced `boundary_crossed`, score at most 2, zero XP | judge service and progression gate tests |
+| Cap boundary crossed | Model-classified cap and score at most 4 | judge service cap test |
+| Ambiguous safety language | No hard stop without high confidence; lower-confidence stop becomes a cap | scoring confidence-downgrade test |
 | Malformed or partial model output | `judge_invalid_output`, no result, no XP, claim released for explicit retry | judge service malformed-output and judge client partial-success tests |
 | Timeout | One automatic transient retry, then `judge_timeout` with preserved transcript | provider error mapping test |
 | Rate limit | One automatic transient retry, then `judge_rate_limited` | provider error mapping test |

@@ -15,6 +15,12 @@ export const EvidenceSchema = z.object({
 });
 
 export const JudgeModelDraftSchema = z.object({
+  safety: z.object({
+    severity: z.enum(["none", "cap", "stop"]),
+    confidence: z.enum(["low", "medium", "high"]),
+    codes: z.array(z.string().trim().min(1).max(80)).max(3),
+    evidence: z.array(EvidenceSchema).max(3),
+  }),
   rubric: z
     .array(
       z.object({

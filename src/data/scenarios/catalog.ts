@@ -78,10 +78,6 @@ export interface ProblemDefinition {
   successSignals: string[];
   supportedOutcomeCodes: OutcomeCode[];
   fallback: {
-    positiveSignals: string[];
-    lowInterestSignals: string[];
-    boundarySignals: string[];
-    exitSignals: string[];
     repliesByTurn: Record<1 | 2 | 3, Record<Engagement, string>>;
   };
 }
@@ -203,10 +199,6 @@ function makeProblem(raw: RawProblem): ProblemDefinition {
     successSignals: split(raw.signals),
     supportedOutcomeCodes: split(raw.outcomes) as OutcomeCode[],
     fallback: {
-      positiveSignals: ["specific context", "balanced contribution", "easy decline"],
-      lowInterestSignals: ["generic line", "monologue", "unearned escalation"],
-      boundarySignals: ["pressure", "repeated request", "ignored refusal"],
-      exitSignals: ["no worries", "take care", "have a good day"],
       repliesByTurn: {
         1: { warm: warm1, neutral: neutral1, low: defaults.low[0], closed: defaults.closed[0] },
         2: { warm: warm2, neutral: neutral2, low: defaults.low[1], closed: defaults.closed[1] },

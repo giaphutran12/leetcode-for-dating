@@ -7,7 +7,7 @@ import {
 import { ZodError } from "zod";
 import { getScenario } from "../../src/data/scenarios";
 import { MIN_CONVERSATION_TURNS } from "../../src/domain/constants";
-import { detectHardGates, finalizeJudgeResult } from "../../src/domain/scoring";
+import { finalizeJudgeResult } from "../../src/domain/scoring";
 import { cleanJudgeCopy } from "../../src/domain/modelCopy";
 import type {
   Attempt,
@@ -226,7 +226,6 @@ export async function judgeAttempt(
           status: "awaiting_judgment" as const,
           personaState: { ...storedAttempt.personaState, terminal: true },
         };
-  const hardGate = detectHardGates(attempt);
   const model = process.env.RIZZCODE_JUDGE_MODEL || "gpt-5.6-luna";
   const store = context.judgmentStore ?? judgmentStoreForRuntime();
   const key = judgmentKey(request, context.userId);
@@ -338,7 +337,7 @@ export async function judgeAttempt(
     model,
     conversation: attempt.messages,
     personaState: attempt.personaState,
-    details: { hardGate, idempotency: "claimed" },
+    details: { idempotency: "claimed" },
     userId: context.userId,
   });
 
@@ -351,7 +350,6 @@ export async function judgeAttempt(
         await provider.evaluate({
           scenario,
           attempt,
-          hardGate,
           abortSignal,
         }),
       );

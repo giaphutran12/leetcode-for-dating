@@ -1,13 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { getScenario } from "../data/scenarios";
 import {
-  appendTurn,
   attemptFromResponses,
-  createAttempt,
 } from "../engine/conversationEngine";
 import { CRITERIA } from "./constants";
 import {
-  detectHardGates,
   finalizeJudgeResult,
   verdictForScore,
 } from "./scoring";
@@ -20,6 +17,12 @@ function perfectDraft(
 ): JudgeModelDraft {
   const evidence = { turn, excerpt, reason: "Exact observable evidence." };
   return {
+    safety: {
+      severity: "none",
+      confidence: "high",
+      codes: [],
+      evidence: [],
+    },
     rubric: CRITERIA.map((id) => ({
       id,
       score: 2 as const,
@@ -46,51 +49,41 @@ describe("hard gates and server-owned arithmetic", () => {
     expect(verdictForScore(8)).toBe("ATE");
   });
 
-  it("stops continued solicitation after an explicit refusal", () => {
+  it("enforces a model-classified stop without re-reading the language", () => {
     const scenario = getScenario("RC-051")!;
+    const body = "Give me another chance. Go out with me.";
     const attempt = attemptFromResponses(
       scenario,
-      [{ turn: 1, body: "Give me another chance. Go out with me." }],
+      [{ turn: 1, body }],
       "attempt-stop",
     );
-    const gate = detectHardGates(attempt);
-    expect(gate.severity).toBe("stop");
-    expect(gate.maxScore).toBe(2);
-    expect(gate.codes).toContain("continued_after_refusal");
+    const draft = perfectDraft(body, 1);
+    draft.safety = {
+      severity: "stop",
+      confidence: "high",
+      codes: ["continued_after_refusal"],
+      evidence: [
+        {
+          turn: 1,
+          excerpt: body,
+          reason: "The user keeps soliciting after a refusal.",
+        },
+      ],
+    };
+    const result = finalizeJudgeResult({
+      attemptId: attempt.id,
+      scenario,
+      attempt,
+      draft,
+    });
+    expect(result.hardGate.severity).toBe("stop");
+    expect(result.hardGate.maxScore).toBe(2);
+    expect(result.finalScore).toBe(2);
   });
 
-  it("recognizes the production sexual-pressure slang and forces a boundary outcome", () => {
+  it("forces a boundary outcome from a model-classified safety stop", () => {
     const scenario = getScenario("RC-040")!;
     const response = { turn: 1 as const, body: "u dtf" };
-    for (const body of [
-      "u dtf",
-      "lowk i just tryna bang",
-      "tue 9 pm we bang ok",
-      "we can talk then bang",
-    ]) {
-      const phraseAttempt = attemptFromResponses(
-        scenario,
-        [{ turn: 1, body }],
-        `attempt-${body}`,
-      );
-      expect(detectHardGates(phraseAttempt).codes).toContain(
-        "explicit_sexual_pressure",
-      );
-    }
-    for (const body of [
-      "gooning to u",
-      "i wanna eat ur puss",
-      "lowk trying to lick your pussy",
-    ]) {
-      const phraseAttempt = attemptFromResponses(
-        scenario,
-        [{ turn: 1, body }],
-        `attempt-directed-${body}`,
-      );
-      expect(detectHardGates(phraseAttempt).codes).toContain(
-        "directed_sexual_comment",
-      );
-    }
     const attempt = attemptFromResponses(
       scenario,
       [
@@ -100,36 +93,91 @@ describe("hard gates and server-owned arithmetic", () => {
       ],
       "attempt-production-regression",
     );
-    const gate = detectHardGates(attempt);
-    expect(gate).toMatchObject({
-      triggered: true,
+    const draft = perfectDraft(response.body, 1, "date_agreed");
+    draft.safety = {
       severity: "stop",
-      maxScore: 2,
-    });
-    expect(gate.codes).toContain("explicit_sexual_pressure");
+      confidence: "high",
+      codes: ["directed_sexual_pressure"],
+      evidence: [
+        {
+          turn: 1,
+          excerpt: response.body,
+          reason: "The line directs sexual pressure at the persona.",
+        },
+      ],
+    };
 
     const result = finalizeJudgeResult({
       attemptId: attempt.id,
       scenario,
       attempt,
-      draft: perfectDraft(response.body, 1, "date_agreed"),
+      draft,
     });
     expect(result.outcome.code).toBe("boundary_crossed");
     expect(result.finalScore).toBe(2);
     expect(result.verdict).toBe("FUMBLED");
   });
 
-  it("caps negging at four", () => {
-    const scenario = getScenario("RC-001")!;
+  it("does not hard-stop a low-confidence safety classification", () => {
+    const scenario = getScenario("RC-040")!;
+    const body = "maybe we get into some trouble later lol";
     const attempt = attemptFromResponses(
       scenario,
-      [{ turn: 1, body: "You are not that pretty, but give me your number." }],
+      [{ turn: 1, body }],
+      "attempt-ambiguous-safety",
+    );
+    const draft = perfectDraft(body, 1, "date_invited");
+    draft.safety = {
+      severity: "stop",
+      confidence: "medium",
+      codes: ["ambiguous_pressure"],
+      evidence: [
+        {
+          turn: 1,
+          excerpt: body,
+          reason: "The meaning is ambiguous and not clearly directed pressure.",
+        },
+      ],
+    };
+
+    const result = finalizeJudgeResult({
+      attemptId: attempt.id,
+      scenario,
+      attempt,
+      draft,
+    });
+
+    expect(result.hardGate.severity).toBe("cap");
+    expect(result.finalScore).toBe(4);
+    expect(result.outcome.code).not.toBe("boundary_crossed");
+  });
+
+  it("caps a model-classified violation at four", () => {
+    const scenario = getScenario("RC-001")!;
+    const body = "You are not that pretty, but give me your number.";
+    const attempt = attemptFromResponses(
+      scenario,
+      [{ turn: 1, body }],
       "attempt-cap",
     );
-    const gate = detectHardGates(attempt);
-    expect(gate.severity).toBe("cap");
-    expect(gate.maxScore).toBe(4);
-    expect(gate.evidence[0].excerpt).toContain("not that pretty");
+    const draft = perfectDraft(body, 1);
+    draft.safety = {
+      severity: "cap",
+      confidence: "high",
+      codes: ["insult_or_negging"],
+      evidence: [
+        { turn: 1, excerpt: body, reason: "The response uses an insult as leverage." },
+      ],
+    };
+    const result = finalizeJudgeResult({
+      attemptId: attempt.id,
+      scenario,
+      attempt,
+      draft,
+    });
+    expect(result.hardGate.severity).toBe("cap");
+    expect(result.hardGate.maxScore).toBe(4);
+    expect(result.finalScore).toBe(4);
   });
 
   it("recalculates score, cap, verdict, labels, and exact evidence", () => {
@@ -179,30 +227,149 @@ describe("hard gates and server-owned arithmetic", () => {
     ).toThrow(/outcome/i);
   });
 
-  it("does not claim contact exchange after the persona declines", () => {
+  it("rejects inconsistent or fabricated safety metadata", () => {
     const scenario = getScenario("RC-001")!;
-    const body = "Want to swap numbers and continue this sometime?";
-    const attempt = appendTurn(createAttempt(scenario, "attempt-declined"), body, {
-      actions: [
-        {
-          kind: "text",
-          body: "no thanks, I would rather leave it here",
-          delayMs: 80,
-        },
-      ],
-      move: "close",
-      interestChange: "up",
-      state: { engagement: "warm", boundary: "none", terminal: false },
-      terminalReason: null,
-    });
+    const body = "That ramen tote is elite.";
+    const attempt = attemptFromResponses(
+      scenario,
+      [{ turn: 1, body }],
+      "attempt-invalid-safety",
+    );
+
+    const missingEvidence = perfectDraft(body, 1);
+    missingEvidence.safety = {
+      severity: "cap",
+      confidence: "high",
+      codes: ["insult"],
+      evidence: [],
+    };
     expect(() =>
       finalizeJudgeResult({
         attemptId: attempt.id,
         scenario,
         attempt,
-        draft: perfectDraft(body, 1, "contact_exchanged"),
+        draft: missingEvidence,
       }),
-    ).toThrow(/outcome/i);
+    ).toThrow(/safety/i);
+
+    const fabricatedEvidence = perfectDraft(body, 1);
+    fabricatedEvidence.safety = {
+      severity: "cap",
+      confidence: "high",
+      codes: ["insult"],
+      evidence: [
+        {
+          turn: 1,
+          excerpt: "words the user never sent",
+          reason: "This citation is fabricated.",
+        },
+      ],
+    };
+    expect(() =>
+      finalizeJudgeResult({
+        attemptId: attempt.id,
+        scenario,
+        attempt,
+        draft: fabricatedEvidence,
+      }),
+    ).toThrow(/safety/i);
+
+    const strayNoneMetadata = perfectDraft(body, 1);
+    strayNoneMetadata.safety = {
+      severity: "none",
+      confidence: "high",
+      codes: ["should_not_exist"],
+      evidence: [],
+    };
+    expect(() =>
+      finalizeJudgeResult({
+        attemptId: attempt.id,
+        scenario,
+        attempt,
+        draft: strayNoneMetadata,
+      }),
+    ).toThrow(/safety/i);
+  });
+
+  it("deduplicates model safety codes", () => {
+    const scenario = getScenario("RC-001")!;
+    const body = "That line was unnecessarily rude.";
+    const attempt = attemptFromResponses(
+      scenario,
+      [{ turn: 1, body }],
+      "attempt-duplicate-safety-codes",
+    );
+    const draft = perfectDraft(body, 1);
+    draft.safety = {
+      severity: "cap",
+      confidence: "high",
+      codes: ["insult", "insult"],
+      evidence: [
+        {
+          turn: 1,
+          excerpt: body,
+          reason: "The model classified the line as an insult.",
+        },
+      ],
+    };
+
+    const result = finalizeJudgeResult({
+      attemptId: attempt.id,
+      scenario,
+      attempt,
+      draft,
+    });
+
+    expect(result.hardGate.codes).toEqual(["insult"]);
+  });
+
+  it("rejects outcome evidence copied from a persona turn", () => {
+    const scenario = getScenario("RC-001")!;
+    const body = "That ramen tote is elite.";
+    const attempt = attemptFromResponses(
+      scenario,
+      [{ turn: 1, body }],
+      "attempt-persona-evidence",
+    );
+    const personaMessage = attempt.messages.find(
+      (message) => message.speaker === "her" && message.turn === 1,
+    );
+    expect(personaMessage).toBeDefined();
+    const draft = perfectDraft(body, 1);
+    draft.outcome.basis = [
+      {
+        turn: 1,
+        excerpt: personaMessage?.body ?? "",
+        reason: "Persona-authored text cannot support the user's outcome.",
+      },
+    ];
+
+    expect(() =>
+      finalizeJudgeResult({
+        attemptId: attempt.id,
+        scenario,
+        attempt,
+        draft,
+      }),
+    ).toThrow(/outcome evidence/i);
+  });
+
+  it("accepts a model-owned graceful exit without magic exit phrases", () => {
+    const scenario = getScenario("RC-051")!;
+    const body = "yea i dont feel well tbh i think i shd go home";
+    const attempt = attemptFromResponses(
+      scenario,
+      [{ turn: 1, body }],
+      "attempt-natural-exit",
+    );
+    const result = finalizeJudgeResult({
+      attemptId: attempt.id,
+      scenario,
+      attempt,
+      draft: perfectDraft(body, 1, "graceful_exit"),
+    });
+
+    expect(result.outcome.code).toBe("graceful_exit");
   });
 
   it("applies a cap after model scoring rather than trusting model totals", () => {
@@ -212,11 +379,24 @@ describe("hard gates and server-owned arithmetic", () => {
       body: "You are not that pretty, but the ramen tote is okay.",
     };
     const attempt = attemptFromResponses(scenario, [response], "attempt-capped");
+    const draft = perfectDraft(response.body, 1);
+    draft.safety = {
+      severity: "cap",
+      confidence: "high",
+      codes: ["insult_or_negging"],
+      evidence: [
+        {
+          turn: 1,
+          excerpt: response.body,
+          reason: "The model classified this as an insulting response.",
+        },
+      ],
+    };
     const result = finalizeJudgeResult({
       attemptId: attempt.id,
       scenario,
       attempt,
-      draft: perfectDraft(response.body, 1),
+      draft,
     });
     expect(result.rawScore).toBe(10);
     expect(result.finalScore).toBe(4);

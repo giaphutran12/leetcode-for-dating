@@ -155,8 +155,9 @@ These decisions are final for this implementation:
     authentication, and automated messaging are outside this MVP.
 21. The production judge is an LLM. A heuristic or hardcoded scorer is not an
     acceptable substitute for the real result.
-22. The rubric, hard gates, schema validation, score arithmetic, and XP calculation are
-    deterministic constraints around the LLM judgment.
+22. The rubric schema, safety evidence rules, score caps, score arithmetic, and XP
+    calculation are deterministic constraints around the LLM judgment. The LLM
+    classifies the meaning of safety-relevant language from the full transcript.
 23. The LLM must run behind a server-side endpoint. Provider credentials must never be
     exposed to browser code.
 24. If judging is unavailable, preserve the completed transcript and offer `Retry
@@ -427,7 +428,7 @@ Every scenario must define:
 - Authored fallback reply graph
 - Supported outcome codes
 
-The same scenario data must drive cards, practice, fallback replies, judging signals,
+The same scenario data must drive cards, practice, fallback replies, judging context,
 tests, and seeded progress.
 
 ## Scenario and persona contracts
@@ -478,10 +479,6 @@ export interface Scenario {
 }
 
 export interface ScenarioFallbackGraph {
-  positiveSignals: string[];
-  lowInterestSignals: string[];
-  boundarySignals: string[];
-  exitSignals: string[];
   repliesByTurn: Record<
     1 | 2 | 3,
     Record<Engagement, string>
@@ -673,7 +670,11 @@ The exact result copy should remain funny and encouraging. Do not humiliate the 
 
 ## Hard gates
 
-Run hard gates before final scoring.
+The judge model classifies hard gates from the full transcript before final scoring.
+The server validates exact evidence and enforces the matching cap.
+Sexual language alone is not a violation. The model must distinguish mutual or
+consensual suggestions from pressure, give ambiguous language the benefit of the
+doubt, and use a stop only with high confidence.
 
 ### Stop-level violations
 
@@ -853,19 +854,23 @@ Server responsibilities:
    gates, or leaderboard totals.
 3. Normalize and bound one to six contiguous user responses.
 4. Require those responses to match the canonical server-owned adaptive conversation.
-5. Run deterministic hard-gate detection before the model call.
-6. Send the scenario, mode, objective, boundaries, persona state, rubric, and transcript
+5. Send the scenario, mode, objective, boundaries, persona state, rubric, and transcript
    to the judge model.
-7. Require structured output matching a server-owned JSON schema.
-8. Verify that each evidence excerpt is an exact substring of the cited user turn.
-9. Recalculate `rawScore`, apply hard-gate caps, and derive `finalScore` and `verdict`
+6. Require structured rubric, safety, and outcome output matching a server-owned JSON
+   schema.
+7. Verify that each evidence excerpt is an exact substring of the cited user turn.
+8. Validate that safety severity, codes, and evidence are internally consistent.
+9. Recalculate `rawScore`, derive the safety cap, and derive `finalScore` and `verdict`
    on the server.
-10. Reject malformed or unsupported claims, including escalation outcomes contradicted
-    by the persona's actual reply.
+10. Reject malformed output and outcome codes that are unavailable to the scenario.
 11. Return a validated `JudgeResult`.
 
-The model evaluates the five rubric dimensions and writes the coaching. Deterministic
-code owns arithmetic, caps, verdict thresholds, schema validation, and XP.
+The model evaluates the five rubric dimensions, classifies safety and the likely
+semantic outcome from the full transcript, and writes the coaching. Deterministic code
+owns safety-field consistency, exact-citation validation, scenario outcome enums,
+arithmetic, caps, verdict thresholds, schema validation, and XP. It must not
+second-guess normal human language with keyword lists, canned phrases, or regex
+classifiers.
 
 Judge prompt requirements:
 
@@ -1474,7 +1479,7 @@ Cover:
 
 - State transitions
 - Three-to-six-turn state transitions
-- Hard gates and caps
+- Model-classified hard gates and server-enforced caps
 - Rubric arithmetic
 - Verdict thresholds
 - XP calculation
@@ -1485,7 +1490,7 @@ Cover:
 - Fallback branch selection
 - In-person and messaging input labels
 - Judge schema validation
-- Server-side score arithmetic and hard-gate caps
+- Server-side score arithmetic and model-classified hard-gate caps
 
 ### Integration tests
 
@@ -1571,7 +1576,7 @@ First visit
 1. Add domain types.
 2. Add the ten scenarios.
 3. Add the judge schema.
-4. Add the rubric and hard gates.
+4. Add the rubric and structured safety judgment.
 5. Add the XP formula.
 6. Add fixed acceptance fixtures.
 

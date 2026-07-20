@@ -45,7 +45,7 @@ function modelDraft(
 }
 
 describe("adaptive persona service", () => {
-  it("generates a causally different playable first turn for all 67 scenarios", async () => {
+  it("generates a structurally playable mock first turn for all 67 scenarios", async () => {
     for (const scenario of scenarios) {
       const service = new PersonaService(
         new PersonaConversationStore(),
@@ -135,12 +135,25 @@ describe("adaptive persona service", () => {
     }
   });
 
-  it("ends immediately on directed sexual pressure without calling the model", async () => {
+  it("lets the persona model interpret directed sexual pressure from context", async () => {
     let calls = 0;
     const provider: PersonaProvider = {
-      async generate(input) {
+      async generate() {
         calls += 1;
-        return fixturePersonaProvider.generate(input);
+        return modelDraft({
+          actions: [
+            {
+              kind: "text",
+              body: "no. that is not okay. do not contact me again.",
+            },
+          ],
+          move: "close",
+          contribution: "no.",
+          interestChange: "down",
+          energyChange: "down",
+          boundary: "explicit",
+          terminalReason: "boundary",
+        });
       },
     };
     const store = new PersonaConversationStore();
@@ -149,14 +162,14 @@ describe("adaptive persona service", () => {
       request("attempt-hard-boundary", "RC-040", 1, "u dtf"),
     );
 
-    expect(calls).toBe(0);
+    expect(calls).toBe(1);
     expect(result).toMatchObject({
       ok: true,
       usedFallback: false,
       reply: {
         interestChange: "down",
         state: {
-          engagement: "closed",
+          engagement: "neutral",
           boundary: "explicit",
           terminal: true,
         },
@@ -169,7 +182,7 @@ describe("adaptive persona service", () => {
   });
 
   it.each(["gooning to u", "i wanna eat ur puss"])(
-    "ends immediately for the RC-035 production phrase %s",
+    "sends the former RC-035 hardcoded phrase %s to the persona model",
     async (body) => {
       let calls = 0;
       const provider: PersonaProvider = {
@@ -184,17 +197,15 @@ describe("adaptive persona service", () => {
         request(`attempt-hard-boundary-${body}`, "RC-035", 1, body),
       );
 
-      expect(calls).toBe(0);
+      expect(calls).toBe(1);
       expect(result).toMatchObject({
         ok: true,
         reply: {
-          move: "close",
           state: {
-            engagement: "closed",
-            boundary: "explicit",
-            terminal: true,
+            boundary: "none",
+            terminal: false,
           },
-          terminalReason: "boundary",
+          terminalReason: null,
         },
       });
     },

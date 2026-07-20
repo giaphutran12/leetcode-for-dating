@@ -3,11 +3,9 @@ import { generateText, Output } from "ai";
 import type {
   Attempt,
   ConversationTurn,
-  HardGate,
   JudgeModelDraft,
   Scenario,
 } from "../../src/domain/types";
-import { matchesSignal } from "../../src/engine/conversationEngine";
 import { JUDGE_SYSTEM_PROMPT, buildJudgePrompt } from "./prompt";
 import { JudgeModelDraftSchema } from "./schema";
 
@@ -15,18 +13,17 @@ export interface JudgeProvider {
   evaluate(input: {
     scenario: Scenario;
     attempt: Attempt;
-    hardGate: HardGate;
     abortSignal: AbortSignal;
   }): Promise<JudgeModelDraft>;
 }
 
 export const aiSdkJudgeProvider: JudgeProvider = {
-  async evaluate({ scenario, attempt, hardGate, abortSignal }) {
+  async evaluate({ scenario, attempt, abortSignal }) {
     const modelId = process.env.RIZZCODE_JUDGE_MODEL || "gpt-5.6-luna";
     const { output } = await generateText({
       model: openai(modelId),
       system: JUDGE_SYSTEM_PROMPT,
-      prompt: buildJudgePrompt(scenario, attempt, hardGate),
+      prompt: buildJudgePrompt(scenario, attempt),
       output: Output.object({
         schema: JudgeModelDraftSchema,
       }),
@@ -38,84 +35,18 @@ export const aiSdkJudgeProvider: JudgeProvider = {
   },
 };
 
-function fixtureScore(
-  id: JudgeModelDraft["rubric"][number]["id"],
-  body: string,
-  scenario: Scenario,
-  hardGate: HardGate,
-): 0 | 1 | 2 {
-  if (hardGate.severity === "stop" && id === "respect_calibration") return 0;
-  if (id === "context_naturalness") {
-    return scenario.successSignals.some((signal) => matchesSignal(body, signal))
-      ? 2
-      : body.length > 18
-        ? 1
-        : 0;
-  }
-  if (id === "reciprocity_listening") {
-    return body.includes("?") && /\b(i|my|me)\b/i.test(body) ? 2 : 1;
-  }
-  if (id === "playfulness_personality") {
-    return /\b(ha|haha|chaos|ramen|projector|fern|tribunal|council)\b/i.test(
-      body,
-    )
-      ? 2
-      : 1;
-  }
-  if (id === "respect_calibration") {
-    return hardGate.triggered ? 0 : 2;
-  }
-  if (
-    scenario.fallback.exitSignals.some((signal) =>
-      matchesSignal(body, signal),
-    )
-  ) {
-    return 2;
-  }
-  return scenario.successSignals.some((signal) => matchesSignal(body, signal))
-    ? 2
-    : 1;
-}
-
 export const fixtureJudgeProvider: JudgeProvider = {
-  async evaluate({ scenario, attempt, hardGate }) {
+  async evaluate({ scenario, attempt }) {
     const userMessages = attempt.messages.filter(
       (message): message is typeof message & { turn: ConversationTurn } =>
         message.speaker === "you" && message.turn > 0,
     );
     const evidenceMessage = userMessages[userMessages.length - 1];
     if (!evidenceMessage) throw new Error("Fixture requires a user response.");
-    const userText = userMessages.map((message) => message.body).join("\n");
-    const graceful = scenario.fallback.exitSignals.some((signal) =>
-      userText.toLowerCase().includes(signal.toLowerCase()),
-    );
-    const askedForContact = /\b(number|contact|swap)\b/i.test(userText);
-    const askedForDate =
-      /\b(coffee|dinner|lunch|date|join me|want to|saturday|thursday)\b/i.test(
-        userText,
-      );
-
-    let outcomeCode: JudgeModelDraft["outcome"]["code"] =
-      "conversation_continues";
-    if (hardGate.triggered) outcomeCode = "boundary_crossed";
-    else if (graceful) outcomeCode = "graceful_exit";
-    else if (
-      askedForContact &&
-      attempt.personaState.engagement === "warm" &&
-      scenario.supportedOutcomeCodes.includes("contact_exchanged")
-    )
-      outcomeCode = "contact_exchanged";
-    else if (
-      askedForDate &&
-      attempt.personaState.engagement === "warm" &&
-      scenario.supportedOutcomeCodes.includes("date_agreed")
-    )
-      outcomeCode = "date_agreed";
-    else if (scenario.supportedOutcomeCodes.includes("shared_interest"))
-      outcomeCode = "shared_interest";
-    else if (scenario.supportedOutcomeCodes.includes("low_interest"))
-      outcomeCode = "low_interest";
-    else outcomeCode = scenario.supportedOutcomeCodes[0];
+    const outcomeCode: JudgeModelDraft["outcome"]["code"] =
+      scenario.supportedOutcomeCodes.includes("conversation_continues")
+        ? "conversation_continues"
+        : scenario.supportedOutcomeCodes[0];
 
     const evidence = {
       turn: evidenceMessage.turn,
@@ -140,17 +71,21 @@ export const fixtureJudgeProvider: JudgeProvider = {
       playfulness_personality:
         "The line feels human instead of copied.",
       respect_calibration:
-        hardGate.triggered
-          ? "This crossed the boundary, so the rep stops here."
-          : "You matched the energy without forcing the interaction.",
+        "You matched the energy without forcing the interaction.",
       challenge_objective:
         "You did what the challenge asked and kept the chat going.",
     };
 
     return {
+      safety: {
+        severity: "none",
+        confidence: "high",
+        codes: [],
+        evidence: [],
+      },
       rubric: ids.map((id) => ({
         id,
-        score: fixtureScore(id, evidenceMessage.body, scenario, hardGate),
+        score: 2,
         evidence,
         feedback: feedback[id],
       })),
