@@ -21,7 +21,7 @@ describe("judge request boundary", () => {
         ].map((id) => ({
           id,
           score: 1,
-          evidence: { turn: 1, excerpt: "Hello", reason: "Exact line." },
+          evidence: { turn: 1, reason: "This user turn supports the score." },
           feedback: "Clear evidence.",
         })),
         worked: ["One strength"],
@@ -31,7 +31,7 @@ describe("judge request boundary", () => {
           code,
           label: OUTCOME_LABELS[code as keyof typeof OUTCOME_LABELS],
           confidence: "medium",
-          basis: [{ turn: 1, excerpt: "Hello", reason: "Exact line." }],
+          basis: [{ turn: 1, reason: "This user turn supports the outcome." }],
         },
       });
       expect(parsed.success, code).toBe(true);
@@ -39,7 +39,7 @@ describe("judge request boundary", () => {
   });
 
   it("bounds structured safety metadata", () => {
-    const evidence = { turn: 1, excerpt: "Hello", reason: "Exact line." };
+    const evidence = { turn: 1, reason: "This user turn supports the result." };
     const base = {
       safety: {
         severity: "cap",
@@ -78,6 +78,46 @@ describe("judge request boundary", () => {
       }).success,
     ).toBe(false);
   });
+
+  it("rejects model-copied excerpts because the server owns transcript text", () => {
+    const evidence = {
+      turn: 1,
+      excerpt: "A nearly correct quote should not be part of this contract.",
+      reason: "This user turn supports the result.",
+    };
+    const parsed = JudgeModelDraftSchema.safeParse({
+      safety: {
+        severity: "none",
+        confidence: "high",
+        codes: [],
+        evidence: [],
+      },
+      rubric: [
+        "context_naturalness",
+        "reciprocity_listening",
+        "playfulness_personality",
+        "respect_calibration",
+        "challenge_objective",
+      ].map((id) => ({
+        id,
+        score: 1,
+        evidence,
+        feedback: "Clear evidence.",
+      })),
+      worked: ["One strength"],
+      improve: ["One improvement"],
+      betterResponse: "Hello there.",
+      outcome: {
+        code: "conversation_continues",
+        label: "Comfortable continuation",
+        confidence: "medium",
+        basis: [evidence],
+      },
+    });
+
+    expect(parsed.success).toBe(false);
+  });
+
   it("rejects client-supplied score, XP, gates, and outcomes", () => {
     const parsed = JudgeRequestSchema.safeParse({
       schemaVersion: "1.0",

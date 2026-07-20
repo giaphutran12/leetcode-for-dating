@@ -91,7 +91,7 @@ function evidenceMatchesRequest(
     (response) =>
       response.turn === evidence.turn &&
       evidence.excerpt.length > 0 &&
-      response.body.includes(evidence.excerpt),
+      response.body === evidence.excerpt,
   );
 }
 

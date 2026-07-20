@@ -47,7 +47,8 @@ The judge server:
 4. Calls the separate `gpt-5.6-luna` judge through Vercel AI SDK v6.
 5. Requires atomic structured output through `generateText()` and
    `Output.object()`.
-6. Verifies five unique criteria and exact user-turn excerpts.
+6. Verifies five unique criteria, resolves model-selected user-turn references,
+   and attaches the original transcript text as evidence.
 7. Rejects malformed output and outcome codes unavailable to the scenario.
 8. Lets the judge model classify safety from the full canonical transcript,
    without keyword lists or regex phrase matching.

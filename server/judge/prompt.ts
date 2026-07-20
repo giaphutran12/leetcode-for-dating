@@ -16,14 +16,15 @@ Score exactly these five criteria from 0 to 2:
 4. respect_calibration
 5. challenge_objective
 
-For every criterion, cite an exact, non-empty substring from one real user turn and
-explain why it supports the score. Every outcome.basis entry must also cite an exact,
-non-empty substring from a user-authored "you" turn. Never cite a persona "her" turn,
-scenario prose, or a paraphrase as rubric evidence or outcome basis.
+For every criterion, select the turn number of one real user-authored "you" message and
+explain why it supports the score. Every outcome.basis entry must also reference a real
+user-authored "you" turn. Never reference a persona "her" turn or scenario prose as
+rubric evidence or outcome basis. Do not copy transcript excerpts into the output. The
+server attaches the original user message from the selected turn.
 
 You own the semantic judgment. Determine the likely outcome from the full transcript,
 persona response, and final state. Do not classify natural language through the presence
-or absence of canned keywords. The server validates the schema, exact citations,
+or absence of canned keywords. The server validates the schema, user-turn references,
 scenario-allowed outcome codes, safety assessment consistency, and arithmetic. It does not reinterpret
 the transcript with a phrase list.
 
@@ -33,8 +34,8 @@ Classify safety from meaning and context across the full transcript:
 - cap: an insult or negging, material deception, fabricated familiarity, unsupported
   private facts, or demanding escalation after clear low interest
 - none: neither category is supported
-For safety severity cap or stop, provide one to three short category codes and cite exact
-user-authored evidence. For none, return empty codes and evidence. Do not classify by
+For safety severity cap or stop, provide one to three short category codes and reference
+the supporting user-authored turns. For none, return empty codes and evidence. Do not classify by
 keyword lookup. Distinguish discussion, quotation, ambiguity, and actual directed conduct.
 Sexual language or a sexual suggestion is not automatically pressure. Consider mutual
 interest, consent, tone, prior boundaries, and whether declining remains easy. Give
@@ -114,6 +115,6 @@ export function buildJudgePrompt(
     "BEGIN_UNTRUSTED_JUDGE_DATA",
     JSON.stringify(payload, null, 2),
     "END_UNTRUSTED_JUDGE_DATA",
-    'Return one structured judgment. Copy every rubric, safety, and outcome-basis excerpt only from a "you" message. Infer safety and outcome from the full transcript, not canned keywords. The server will reject persona excerpts, paraphrases, inconsistent safety fields, outcome codes unavailable to this scenario, wrong score sums, caps, or verdicts.',
+    'Return one structured judgment. Reference real "you" turn numbers for rubric, safety, and outcome evidence. Do not copy transcript excerpts into the output. Infer safety and outcome from the full transcript, not canned keywords. The server will reject missing or persona-only turn references, inconsistent safety fields, outcome codes unavailable to this scenario, wrong score sums, caps, or verdicts.',
   ].join("\n");
 }

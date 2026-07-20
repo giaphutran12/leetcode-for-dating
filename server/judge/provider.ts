@@ -3,11 +3,15 @@ import { generateText, Output } from "ai";
 import type {
   Attempt,
   ConversationTurn,
+  Evidence,
   JudgeModelDraft,
   Scenario,
 } from "../../src/domain/types";
 import { JUDGE_SYSTEM_PROMPT, buildJudgePrompt } from "./prompt";
-import { JudgeModelDraftSchema } from "./schema";
+import {
+  JudgeModelDraftSchema,
+  type JudgeModelOutput,
+} from "./schema";
 
 export interface JudgeProvider {
   evaluate(input: {
@@ -15,6 +19,52 @@ export interface JudgeProvider {
     attempt: Attempt;
     abortSignal: AbortSignal;
   }): Promise<JudgeModelDraft>;
+}
+
+export class JudgeEvidenceReferenceError extends Error {
+  constructor(turn: ConversationTurn) {
+    super(`Judge evidence references missing user-authored turn ${turn}.`);
+    this.name = "JudgeEvidenceReferenceError";
+  }
+}
+
+export function materializeJudgeEvidence(
+  attempt: Attempt,
+  output: JudgeModelOutput,
+): JudgeModelDraft {
+  const userMessages = new Map(
+    attempt.messages
+      .filter(
+        (message): message is typeof message & { turn: ConversationTurn } =>
+          message.speaker === "you" && message.turn > 0,
+      )
+      .map((message) => [message.turn, message.body]),
+  );
+  const materialize = (
+    reference: JudgeModelOutput["rubric"][number]["evidence"],
+  ): Evidence => {
+    const excerpt = userMessages.get(reference.turn);
+    if (!excerpt) {
+      throw new JudgeEvidenceReferenceError(reference.turn);
+    }
+    return { ...reference, excerpt };
+  };
+
+  return {
+    ...output,
+    safety: {
+      ...output.safety,
+      evidence: output.safety.evidence.map(materialize),
+    },
+    rubric: output.rubric.map((item) => ({
+      ...item,
+      evidence: materialize(item.evidence),
+    })),
+    outcome: {
+      ...output.outcome,
+      basis: output.outcome.basis.map(materialize),
+    },
+  };
 }
 
 export const aiSdkJudgeProvider: JudgeProvider = {
@@ -31,7 +81,10 @@ export const aiSdkJudgeProvider: JudgeProvider = {
       maxRetries: 0,
     });
 
-    return JudgeModelDraftSchema.parse(output);
+    return materializeJudgeEvidence(
+      attempt,
+      JudgeModelDraftSchema.parse(output),
+    );
   },
 };
 

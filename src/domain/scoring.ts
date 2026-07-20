@@ -27,7 +27,7 @@ function evidenceExists(attempt: Attempt, evidence: Evidence): boolean {
     (message) =>
       message.turn === evidence.turn &&
       evidence.excerpt.length > 0 &&
-      message.body.includes(evidence.excerpt),
+      message.body === evidence.excerpt,
   );
 }
 

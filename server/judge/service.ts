@@ -28,6 +28,7 @@ import {
 } from "../persona/store";
 import {
   aiSdkJudgeProvider,
+  JudgeEvidenceReferenceError,
   type JudgeProvider,
 } from "./provider";
 import {
@@ -57,6 +58,7 @@ function statusCode(error: unknown): number | undefined {
 function classifyProviderError(error: unknown): JudgeServiceError {
   if (error instanceof JudgeServiceError) return error;
   if (
+    error instanceof JudgeEvidenceReferenceError ||
     error instanceof ZodError ||
     NoObjectGeneratedError.isInstance(error) ||
     TypeValidationError.isInstance(error) ||

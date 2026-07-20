@@ -6,7 +6,10 @@ import {
 import { PersonaService } from "../persona/service";
 import { PersonaConversationStore } from "../persona/store";
 import type { JudgeProvider } from "./provider";
-import { fixtureJudgeProvider } from "./provider";
+import {
+  fixtureJudgeProvider,
+  JudgeEvidenceReferenceError,
+} from "./provider";
 import { judgeAttempt } from "./service";
 import {
   MemoryJudgmentStore,
@@ -63,7 +66,7 @@ async function judgeStoredAttempt(
 }
 
 describe("judge service integration", () => {
-  it("judges a complete in-person attempt with five exact-evidence criteria", async () => {
+  it("judges a complete in-person attempt with five server-owned evidence excerpts", async () => {
     const response = await judgeStoredAttempt(inPersonRequest);
     expect(response.ok).toBe(true);
     if (!response.ok) return;
@@ -73,7 +76,7 @@ describe("judge service integration", () => {
       const cited = inPersonRequest.responses.find(
         (turn) => turn.turn === item.evidence.turn,
       );
-      expect(cited?.body).toContain(item.evidence.excerpt);
+      expect(item.evidence.excerpt).toBe(cited?.body);
     }
     expect(response.result.outcome.code).toBe("conversation_continues");
   });
@@ -353,6 +356,23 @@ describe("judge service integration", () => {
       code: "judge_invalid_output",
     });
     expect(response).not.toHaveProperty("result");
+  });
+
+  it("classifies an invented evidence turn as invalid output without retrying", async () => {
+    const provider: JudgeProvider = {
+      evaluate: vi.fn(async () => {
+        throw new JudgeEvidenceReferenceError(2);
+      }),
+    };
+
+    const response = await judgeStoredAttempt(inPersonRequest, provider);
+
+    expect(response).toMatchObject({
+      ok: false,
+      retryable: true,
+      code: "judge_invalid_output",
+    });
+    expect(provider.evaluate).toHaveBeenCalledOnce();
   });
 
   it("reuses a completed judgment for the same immutable attempt", async () => {

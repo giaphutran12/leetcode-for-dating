@@ -41,7 +41,7 @@ function response(): JudgeApiResponse {
         score: 2,
         evidence: {
           turn: 1,
-          excerpt: "pastry",
+          excerpt: "That pastry looks elite.",
           reason: "Grounded in the transcript.",
         },
         feedback: "Clear and grounded.",
@@ -59,7 +59,7 @@ function response(): JudgeApiResponse {
         basis: [
           {
             turn: 3,
-            excerpt: "coffee Thursday",
+            excerpt: "Want to compare notes over coffee Thursday?",
             reason: "A specific invitation was made.",
           },
         ],
